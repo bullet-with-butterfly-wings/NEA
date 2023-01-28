@@ -21,12 +21,13 @@ def handle(NAME, addr,client):
     while True:#all msg> (type, receiver, source), if disc or request
         try:
             msg = pickle.loads(client.recv(1048)) #all formating at server
-            if msg[0] == "message" or msg[0] == "request":
-                c = clients[msg[1]]
-                c.send(pickle.dumps(msg))
-            if msg[0] == "disconnect":
+            if msg[0] == "END":
                 client.close()
                 del clients[(NAME,addr)]
+            else:
+                c = clients[msg[1]]
+                c.send(pickle.dumps(msg))
+            
         except:
             client.close()
             del clients[(NAME,addr)]
