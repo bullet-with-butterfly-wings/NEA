@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include<time.h>
 #include<math.h>
-#include<windows.h>
+#include<unistd.h>
 
-#include "..\library.h"
+#include "../library.h"
 
 int main(){
   char *filename = "keys.out";
@@ -27,7 +27,7 @@ int main(){
   huge decrypted = pow_mod(scrambled, e, n);
   printf("Decrypted message: %llu \n", decrypted);
 
-  Sleep(7000); //millisecond
+  sleep(7000); //millisecond
   return 0;
   }
 

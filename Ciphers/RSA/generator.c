@@ -4,7 +4,7 @@
 #include<time.h>
 #include<math.h>
 
-#include "..\library.h"
+#include "../library.h"
 
 int main(){
   //int prime(huge);

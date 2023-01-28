@@ -4,11 +4,11 @@ import pickle
 
 client = soc.socket(soc.AF_INET,soc.SOCK_STREAM)
 #server details
-IP = "192.168.0.111"
+IP = "172.20.12.57"
 PORT = 9090
 
 name = input("Name:")
-msg = ""
+msg = ("","")
 
 
 client.connect((IP,PORT))

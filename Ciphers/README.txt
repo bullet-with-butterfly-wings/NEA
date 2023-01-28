@@ -9,3 +9,5 @@ C doesnt permit array with size defined by variable => conses about block size 6
 
 https://stackoverflow.com/questions/2262386/generate-sha256-with-openssl-and-c
 SHA is bullshit, and it needs special compilation: gcc -Wall -g -o program Playground.c -lcrypto (Fuck)
+
+gcc -o DH DH.o library.o -lpthread -lm and -c flag for libraries

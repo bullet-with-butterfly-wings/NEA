@@ -2,12 +2,12 @@ typedef unsigned long long huge;
 
 #include<stdio.h>
 #include<string.h>
-#include <stdlib.h>
+#include<stdlib.h>
 #include<time.h>
 #include<math.h>
 
 
-int prime(huge n){
+int prime(huge n){ //Fermats primality test
     if (n == 2){
         return 1;
     }
@@ -52,15 +52,6 @@ huge pow_mod(huge b, huge e, huge mod){
   return ans; 
 }
 
-int * convert(char * m){
-  int l = strlen(m);
-  int res[l];
-  for (int i = 0; i < l;i++){
-    m[i] = (int)(m[i]);
-  }
-  return res;
-}
-
 huge gcdExtended(huge a, huge b, huge *x, huge *y)
 {
     // Base Case
@@ -81,3 +72,4 @@ huge gcdExtended(huge a, huge b, huge *x, huge *y)
   
     return g;
 }
+

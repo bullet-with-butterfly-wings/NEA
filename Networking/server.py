@@ -4,7 +4,7 @@ import threading as thr
 import time
 
 server = soc.socket(soc.AF_INET, soc.SOCK_STREAM)
-IP = "192.168.0.111"
+IP = "172.20.12.57"
 PORT = 9090
 
 server.bind((IP,PORT))

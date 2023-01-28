@@ -2,12 +2,12 @@
 #include <time.h>
 #include <stdlib.h>
 #include "library.h"
-#include<windows.h>
+#include <unistd.h> // for windows #include<windows.h>
 
 
 int main(void) {
   huge g = 7; //primitive root - usually prime
-  huge n = 104543; //prime
+  huge n = 2147483647; //prime
   srand(time(NULL));
   //First person
   huge a = rand()+1;//not suitable for encryption 
@@ -20,7 +20,5 @@ int main(void) {
   huge key_2 = pow_mod(A,b,n);
   printf("%lld \n", key_1);
   printf("%lld \n", key_2);
-
-  Sleep(7000);
   return 0;
 }
