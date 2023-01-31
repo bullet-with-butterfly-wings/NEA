@@ -22,6 +22,19 @@ global connected
 connected = False
 #preparation done
 
+class Message:
+    def __init__(self, type, receiver, source, text = None): #
+        self.type = type
+        self.receiver = receiver
+        self.source = source
+        self.text = text
+    def send(self):
+        if text:
+            msg = pickle.dumps((self.type,self.receiver,self.source, self.text))
+        else:
+            msg = pickle.dumps((self.type,self.receiver,self.source, self.text))
+        client.send(msg)
+
 def updater():
     while True:
         global connected
