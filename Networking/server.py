@@ -1,7 +1,6 @@
 import socket as soc
 import pickle
 import threading as thr
-import time
 
 server = soc.socket(soc.AF_INET, soc.SOCK_STREAM)
 IP = "172.20.12.57"
