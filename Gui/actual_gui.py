@@ -1,18 +1,19 @@
 import sys
 import time
 from PyQt5.QtWidgets import * 
-import asyncio
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtCore import * 
 from PyQt5.QtGui import * 
+import asyncio
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QHBoxLayout, QGridLayout
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
+from threading import Timer
+
 
 protocols = ["",""]
-name = ["",""]
-answer_done = False
-answer = False
+contacts = ["John", "James", "Jane", "Jonas"]
+
 
 class Scene(QMainWindow):
     def __init__(self):
@@ -23,121 +24,123 @@ class Scene(QMainWindow):
     def intro(self):
         self.sc = Intro()
         self.setCentralWidget(self.sc)
-        self.sc.continue_button.clicked.connect(self.request)
+        #buttons
+        self.sc.continue_button.clicked.connect(self.making_request)
         self.show()
-
-    def request(self):
-        self.sc = Request()
-        self.setCentralWidget(self.sc)
-        global pro_buttons 
-        pro_buttons = [self.sc.rsa_button, self.sc.feistel_button, self.sc.dh_button, self.sc.vernam_button]
-        titles = ["RSA","Feistel","DH", "Vernam"]
-        bt_group = QButtonGroup()
-        for i in range(len(pro_buttons)):
-            #pro_buttons[i].clicked.connect(lambda: self.protocols(titles[i]))
-            pro_buttons[i].setCheckable(True)
-            bt_group.addButton(pro_buttons[i])
-        
-        self.sc.rsa_button.clicked.connect(lambda: self.protocols("RSA",self.sc.rsa_button,self.sc.dh_button))
-        self.sc.feistel_button.clicked.connect(lambda: self.protocols("Feistel",self.sc.feistel_button, self.sc.vernam_button))
-        self.sc.dh_button.clicked.connect(lambda: self.protocols("DH", self.sc.dh_button, self.sc.rsa_button))
-        self.sc.vernam_button.clicked.connect(lambda: self.protocols("Vernam",self.sc.vernam_button, self.sc.feistel_button))
-        
-        self.sc.send_button.clicked.connect(lambda: asyncio.run(self.waiting_for_response()))
-        self.sc.cancel_button.clicked.connect(self.intro)
-        self.show()
-
-    def response(self):
-        self.sc = Response("john", "Rsa")
-        self.setCentralWidget(self.sc)
-        self.sc.accept_button.clicked.connect()
-        self.show()
-
-    async def waiting_for_response(self):
-        self.sc = Waiting()
-        self.setCentralWidget(self.sc)
-        self.sc.decision.setText("Answer")
-        self.show()
-        
+        #prepis to na normalni threading
         self.thread = QThread()
         # Step 3: Create a worker object
-        self.worker = Worker()
+        self.worker = IntroBack()
         # Step 4: Move worker to the thread
         self.worker.moveToThread(self.thread)
-
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
-        self.worker.finished.connect(self.request)
-        self.worker.answer.connect(lambda x: self.sc.decision.setText(str(x)))
+        self.worker.finished.connect(self.response)
         self.thread.start()
-        
+
+    def chatroom(self):
+        print("COol")
+        self.sc = Chatroom()
+        self.setCentralWidget(self.sc)
+        #buttons
+        #self.sc.continue_button.clicked.connect(self.making_request)
+
+
+    def making_request(self):
+        self.thread.terminate()
+        self.worker.deleteLater()
+
+        self.sc = RequestMaker()
+        self.setCentralWidget(self.sc)
+        pro_buttons = [self.sc.feistel_button, self.sc.rsa_button, self.sc.dh_button,  self.sc.vernam_button]
+        titles = ["Feistel", "RSA", "DH", "Vernam"]
         
 
-    def protocols(self,pro, button, uncheck_button):
+        for i in range(len(pro_buttons)):
+            pro_buttons[i].clicked.connect(lambda idk, arg = (i, pro_buttons[i], pro_buttons[len(titles)-1-i]): self.protocols(titles[arg[0]], arg[1],arg[2]))
+            pro_buttons[i].setCheckable(True)
+        
+        self.sc.send_button.setEnabled(False)
+        self.sc.send_button.clicked.connect(lambda: asyncio.run(self.waiting_for_response()))#asyncio.run()
+        self.sc.cancel_button.clicked.connect(self.intro)
+        self.show()
+        #contacts
+        for i in range(len(contact_buttons)):
+            contact_buttons[i].setCheckable(True)
+            contact_buttons[i].clicked.connect(lambda idk, arg = i: self.contacts(arg))
+
+    #these two functions governs contacts and protocols buttons    
+    def contacts(self,pressed):
+        if not contact_buttons[pressed].isChecked():
+            contacts_ready = False
+        else:
+            for i in range(len(contact_buttons)):
+                if i == pressed:
+                    contact_buttons[i].setChecked(True)
+                    contacts_ready = True
+                    global call
+                    call = contacts[i]
+                else:
+                    contact_buttons[i].setChecked(False)
+                    
+        if (protocols[0] != "" and protocols[1] != "") and contacts_ready:
+            self.sc.send_button.setEnabled(True)
+        else:
+            self.sc.send_button.setEnabled(False)
+        
+
+    def protocols(self, pro, button, uncheck_button):
         i = int(pro in ["Vernam", "Feistel"])
         if not button.isChecked():
-            protocols[i] = " "
+            protocols[i] = ""
         else: 
             protocols[i] = pro
             uncheck_button.setChecked(False)
-        print(protocols)
+        
+        c_ready = False
+        for c in contact_buttons:
+            if c.isChecked():
+                c_ready = True 
+
+        if (protocols[0] != "" and protocols[1] != "") and c_ready:
+            self.sc.send_button.setEnabled(True)
+        else:
+            self.sc.send_button.setEnabled(False)
+        
         
 
-class Worker(QObject):
-    finished = pyqtSignal()
-    answer = pyqtSignal(bool)
+    def response(self):
+        self.sc = RequestReciever("john", "Rsa")
+        self.setCentralWidget(self.sc)
+        self.sc.accept_button.clicked.connect(self.chatroom)
+        self.sc.reject_button.clicked.connect(self.intro)
+        self.show()
 
-    def run(self):
-        """Long-running task."""
-        for i in range(5):
-            time.sleep(1)
-            print(i)
-        self.answer.emit(True)
-        for i in range(3):
-            time.sleep(1)
-            print(i)
-        self.finished.emit()
-
-
-class Response(QWidget):
-    def __init__(self, source, protocols) -> None:
-        super().__init__()
-        # Create a label to display the request message
-        self.request_label = QLabel("You have received a request from " + source + " for the following protocols: " + protocols)
-        self.request_label.setAlignment(Qt.AlignCenter)
-        self.request_label.setMargin(20)
-
-        # Create the accept button
-        self.accept_button = QPushButton("Accept")
-        self.accept_button.setStyleSheet("background-color: green")
-        print(answer)
-
-        # Create the reject button
-        self.reject_button = QPushButton("Reject")
-        self.reject_button.setStyleSheet("background-color: red")
+    async def waiting_for_response(self):
+        print("dfvfs")
+        self.sc = Waiting()
+        self.setCentralWidget(self.sc)
+        self.sc.decision.setText("Answer")
+        self.show()
+        self.thread1 = QThread()
+        # Step 3: Create a worker object
+        self.worker1 = RequestBack()
         
-        self.reject_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.accept_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.request_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        # Create a horizontal layout to hold the pro_buttons
-        pro_buttons_layout = QHBoxLayout()
-        pro_buttons_layout.addWidget(self.accept_button)
-        pro_buttons_layout.addWidget(self.reject_button)
-        pro_buttons_layout.setContentsMargins(20, 0, 20, 20)
+        # Step 4: Move worker to the thread
+        self.worker1.moveToThread(self.thread1)
 
-        # Create a widget to hold the layout
-        pro_buttons_widget = QWidget()
-        pro_buttons_widget.setLayout(pro_buttons_layout)
+        self.thread1.started.connect(self.worker1.run)
+        self.worker1.finished.connect(self.thread1.quit)
+        self.worker1.finished.connect(self.worker1.deleteLater)
+        self.thread1.finished.connect(self.thread1.deleteLater)
+        self.worker1.finished.connect(self.chatroom)
+        self.worker1.answer.connect(lambda x: self.sc.decision.setText(str(x)))
+        self.thread1.start()
+        
+        
 
-        # Set the layout of the main window
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.request_label)
-        main_layout.addWidget(pro_buttons_widget)
-        main_layout.setContentsMargins(200, 100, 200, 100)
-
-        self.setLayout(main_layout)
 
 class Intro(QWidget):
     def __init__(self) -> None:
@@ -171,26 +174,10 @@ class Intro(QWidget):
         self.continue_button.setFont(QFont("Ariel", 20))
         self.setLayout(layout)
 
-
-class Waiting(QWidget):
-    def __init__(self):
-        super().__init__()
-        layout = QVBoxLayout()
-        label = QLabel("Waiting for the decision")
-        label.setAlignment(Qt.AlignCenter)            
-        self.decision = QLabel("Answer??")
-        self.decision.setAlignment(Qt.AlignCenter)
-        layout.addWidget(label)
-        layout.addWidget(self.decision)
-        layout.setContentsMargins(200, 100, 200, 100)
-        self.setLayout(layout)
-
-
-
-class Request(QWidget):
+class RequestMaker(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        label = QLabel("Select a protocols:")
+        label = QLabel("Select protocols:")
         label.setAlignment(Qt.AlignCenter)
 
         # Create pro_buttons
@@ -207,15 +194,6 @@ class Request(QWidget):
         self.send_button.setMinimumSize(QSize(80, 40))
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setMinimumSize(QSize(80, 40))
-
-        contacts_button1 = QPushButton("Contact 1")
-        contacts_button1.setMinimumSize(QSize(80, 40))
-        contacts_button2 = QPushButton("Contact 2")
-        contacts_button2.setMinimumSize(QSize(80, 40))
-        contacts_button3 = QPushButton("Contact 3")
-        contacts_button3.setMinimumSize(QSize(80, 40))
-        contacts_button4 = QPushButton("Contact 4")
-        contacts_button4.setMinimumSize(QSize(80, 40))
 
         #self.rsa_button.clicked.connect(self.)
         #self.dh_button.clicked.connect(self.self.dh_button)
@@ -235,11 +213,13 @@ class Request(QWidget):
 
         # Create a separate vertical layout for contacts pro_buttons
         contacts_layout = QVBoxLayout()
-
-        contacts_layout.addWidget(contacts_button1)
-        contacts_layout.addWidget(contacts_button2)
-        contacts_layout.addWidget(contacts_button3)
-        contacts_layout.addWidget(contacts_button4)
+        global contact_buttons 
+        contact_buttons = []
+        for c in contacts:
+            contact_buttons.append(QPushButton(c))
+            contact_buttons[-1].setMinimumSize(QSize(80, 40))
+            contacts_layout.addWidget(contact_buttons[-1])
+        
         contacts_layout.setContentsMargins(0, 0, 0, 0)
 
 
@@ -250,6 +230,112 @@ class Request(QWidget):
     
         layout.setContentsMargins(20, 50, 10, 50)
         self.setLayout(layout)
+
+
+class Waiting(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        label = QLabel("Waiting for the decision")
+        label.setAlignment(Qt.AlignCenter)            
+        self.decision = QLabel("Answer??")
+        self.decision.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+        layout.addWidget(self.decision)
+        layout.setContentsMargins(200, 100, 200, 100)
+        self.setLayout(layout)
+
+
+class RequestReciever(QWidget):
+    def __init__(self, source, protocols) -> None:
+        super().__init__()
+        # Create a label to display the request message
+        self.request_label = QLabel("You have received a request from " + source + " for the following protocols: " + protocols)
+        self.request_label.setAlignment(Qt.AlignCenter)
+        self.request_label.setMargin(20)
+
+        # Create the accept button
+        self.accept_button = QPushButton("Accept")
+        self.accept_button.setStyleSheet("background-color: green")
+
+        # Create the reject button
+        self.reject_button = QPushButton("Reject")
+        self.reject_button.setStyleSheet("background-color: red")
+        
+        self.reject_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.accept_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.request_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # Create a horizontal layout to hold the pro_buttons
+        pro_buttons_layout = QHBoxLayout()
+        pro_buttons_layout.addWidget(self.accept_button)
+        pro_buttons_layout.addWidget(self.reject_button)
+        pro_buttons_layout.setContentsMargins(20, 0, 20, 20)
+
+        # Create a widget to hold the layout
+        pro_buttons_widget = QWidget()
+        pro_buttons_widget.setLayout(pro_buttons_layout)
+
+        # Set the layout of the main window
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.request_label)
+        main_layout.addWidget(pro_buttons_widget)
+        main_layout.setContentsMargins(200, 100, 200, 100)
+
+        self.setLayout(main_layout)
+
+class IntroBack(QObject): #backgrounds
+    finished = pyqtSignal()
+    message = pyqtSignal(bool)
+        
+    def run(self):
+        run = True
+        while run:
+            input("Who asked?")
+        self.finished.emit()
+
+
+
+class RequestBack(QObject):
+    finished = pyqtSignal()
+    answer = pyqtSignal(bool)
+
+    def run(self):
+        for i in range(1):
+            time.sleep(1)
+            print(i)
+        self.answer.emit(True)
+        for i in range(1):
+            time.sleep(1)
+            print(i)
+        self.finished.emit()
+
+class ChatBack():
+    pass
+
+
+class Chatroom(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout()
+        #layout.setAlignment(Qt.AlignCenter)
+        intro_text = QLabel("""DAmmmm
+        """)
+
+        layout.addWidget(intro_text)
+        
+        components = [intro_text]
+        
+        for c in components:
+            c.setAlignment(Qt.AlignCenter)
+            c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
+            c.setFont(QFont("Ariel", 20))
+            c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        #self.continue_button.setStyleSheet("")
+
+        layout.setContentsMargins(200, 100, 200, 100)
+        self.setLayout(layout)
+
 
 
 
