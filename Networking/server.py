@@ -26,7 +26,6 @@ def handle(NAME, addr,client):
             else:
                 c = clients[msg[1]]
                 c.send(pickle.dumps(msg))
-            
         except:
             client.close()
             del clients[(NAME,addr)]

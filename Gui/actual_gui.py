@@ -1,7 +1,10 @@
+
 import sys
 import time
+import threading
+import multiprocessing
 from PyQt5.QtWidgets import * 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 from PyQt5.QtCore import * 
 from PyQt5.QtGui import * 
 import asyncio
@@ -24,14 +27,12 @@ class Scene(QMainWindow):
     def intro(self):
         self.sc = Intro()
         self.setCentralWidget(self.sc)
-        #buttons
+        #buttons 
         self.sc.continue_button.clicked.connect(self.making_request)
         self.show()
         #prepis to na normalni threading
         self.thread = QThread()
-        # Step 3: Create a worker object
         self.worker = IntroBack()
-        # Step 4: Move worker to the thread
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.thread.quit)
@@ -39,6 +40,7 @@ class Scene(QMainWindow):
         self.thread.finished.connect(self.thread.deleteLater)
         self.worker.finished.connect(self.response)
         self.thread.start()
+
 
     def chatroom(self):
         print("COol")
@@ -49,8 +51,10 @@ class Scene(QMainWindow):
 
 
     def making_request(self):
-        self.thread.terminate()
-        self.worker.deleteLater()
+        self.thread.quit()
+        self.worker.on = False
+        print("fv")
+        #self.worker.
 
         self.sc = RequestMaker()
         self.setCentralWidget(self.sc)
@@ -112,6 +116,7 @@ class Scene(QMainWindow):
         
 
     def response(self):
+        print("fd")
         self.sc = RequestReciever("john", "Rsa")
         self.setCentralWidget(self.sc)
         self.sc.accept_button.clicked.connect(self.chatroom)
@@ -284,17 +289,24 @@ class RequestReciever(QWidget):
         self.setLayout(main_layout)
 
 class IntroBack(QObject): #backgrounds
+    def __init__(self):
+        super().__init__()
+        self.on = True
     finished = pyqtSignal()
     message = pyqtSignal(bool)
         
     def run(self):
-        run = True
-        while run:
-            input("Who asked?")
-        self.finished.emit()
+        t = Timer(3.0,self.p)
+        t.start()
+        #input() here is a plan: when will timer finish, we will send a message to server to send us a message to make us free. For now, just ignore it
+        time.sleep(5)
+        if self.on:
+            self.finished.emit()
+        else:
+            return
 
-
-
+    def p(self):
+        print("o sghid")
 class RequestBack(QObject):
     finished = pyqtSignal()
     answer = pyqtSignal(bool)

@@ -13,7 +13,7 @@ name = input("Name:")
 msg = ("","")
 
 client.connect((IP,PORT))
-print(client.recv(1024).decode("utf-8"))
+print(client.recv(1024).decode("utf-8"))#greeting from the server
 client.send(name.encode("utf-8"))
 contacts = pickle.loads(client.recv(4096))
 print(contacts)
@@ -28,6 +28,7 @@ class Message:
         self.receiver = receiver
         self.source = source
         self.text = text
+
     def send(self):
         if text:
             msg = pickle.dumps((self.type,self.receiver,self.source, self.text))
@@ -59,7 +60,6 @@ def updater():
             action = pickle.loads(client.recv(4096))
             if action[0] == "message":
                 print(f"From {action[2][0]}:",action[3])
-                msg_from = action[3]
 
 up = thr.Thread(target=updater)
 up.start()
@@ -71,7 +71,7 @@ while not connected: #you can request multiple people
     msg = pickle.dumps(("request", contacts[receiver], (name,client.getsockname()), assymetric+" "+symmetric))
     client.send(msg)
     print("Waiting...")
-    time.sleep(10_000)
+    time.sleep(10)
 
 print("Message phase")
 
