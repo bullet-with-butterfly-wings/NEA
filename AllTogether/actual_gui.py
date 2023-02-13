@@ -121,8 +121,6 @@ class Scene(QMainWindow):
         self.setCentralWidget(self.sc)
         self.sc.decision.setText(text)
         self.show()
-        
-
 
 class Intro(QWidget):
     def __init__(self) -> None:

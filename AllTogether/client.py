@@ -74,10 +74,13 @@ class Client(soc.socket):
                     #decision = "accept"#make actual decision
                     #self.connected = True
 
-                if action.type == "response" and self.buddy == action.source:
+                if action.type == "response": #and self.buddy == action.source:
                         print(action.text)
                         if action.text == "accept":
                             self.connected = True
+                            self.state = "accepted"
+                        else:
+                            self.state = "rejected"
                 
 
             print("Connected with your buddy")

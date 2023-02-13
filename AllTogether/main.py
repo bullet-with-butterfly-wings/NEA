@@ -17,7 +17,7 @@ import os
 import sys
 
     
-def gui_handler(signum, frame):
+def gui_handler():
     print("Update:", window.state)
     if window.state == "intro":
         window.intro()
@@ -26,51 +26,85 @@ def gui_handler(signum, frame):
         arg = []
         for c in loco.contacts:
             arg.append(c[0]+str(c[1])) 
-            window.making_request(arg) 
+        window.making_request(arg) 
     elif window.state == "waiting_for_response":
         loco.initialiser(protocols,window.partner)
     elif window.state == "response":
         pass
     elif window.state == "answered_request":
-        loco.response(window.decision)
         if window.decision:
+            loco.response("accept")
             window.chatroom()#protocols
+            loco.state = "in_call"
         else:
+            loco.response("reject")
             window.protocols = ("","")
             window.buddy = None
             window.intro()
-    #print("Update:",loco.state)
-    #if loco.state == "received_request":
-    #    window.response(loco.buddy,loco.protocols)
-    
-def check():
-    pre_g = ""
-    while True:
-        time.sleep(1)
-        #print("Window:",window.state)
-        #print("Client:",loco.state)
-        if window.state != pre_g:
-            os.kill(int(pid),signal.SIGUSR1)
-            pre_g = window.state
-            print("Check_win:", window.state)
-        """
-        if loco.state != pre_c:
-            os.kill(int(pid),signal.SIGUSR1)
-            pre_c = loco.state
-            print("Check_cli:",loco.state)
-        """
+            loco.state = "connecting"
+ 
+
+def cli_handler():
+    print("Update:", loco.state)    
+    if loco.state == "received_request":
+        window.response(loco.buddy, loco.protocols)
+
+    if loco.state == "accepted":
+        window.waiting_for_response("Accepted")
+        loco.state = "in_call"
+        window.chatroom()
+    if loco.state == "rejected":
+        window.waiting_for_response("Rejected")
+        loco.state = "connecting"
+        window.intro()
+        
+class Worker(QObject):
+    finished = pyqtSignal()
+    gui_change = pyqtSignal()
+    cli_change = pyqtSignal()
+    def check(self):
+        pre_g = ""
+        pre_c = ""
+        while True:
+            #print("Window:",window.state)
+            #print("Client:",loco.state)
+            if window.state != pre_g:
+                self.gui_change.emit()
+                pre_g = window.state
+                print("Check_win:", window.state)
+            if loco.state != pre_c:
+                self.cli_change.emit()
+                pre_c = loco.state
+                print("Check_win:", window.state)
+        self.finished.emit()
+        
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     global loco
     loco = Client()
     global window
     window = Scene()
-    window.intro()        
-    global pid
-    pid = os.getpid()
-    print(pid)    
-    signal.signal(signal.SIGUSR1, gui_handler)
-    #signal.signal(signal.SIGUSR2, client_handler)
-    t = thr.Thread(target= check)
-    t.start()
+
+    thread = QThread()
+    # Step 3: Create a worker object
+    worker = Worker()
+        # Step 4: Move worker to the thread
+    worker.moveToThread(thread)
+        # Step 5: Connect signals and slots
+    thread.started.connect(worker.check)
+    worker.gui_change.connect(gui_handler)
+    worker.cli_change.connect(cli_handler)
+
+    # Step 6: Start the thread
+    thread.start()
+
+
+
+
+
+
+
+
+
     sys.exit(app.exec_())
