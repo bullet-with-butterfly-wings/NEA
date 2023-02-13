@@ -22,14 +22,15 @@ class Client(soc.socket):
     def __init__(self, family=soc.AF_INET, type=soc.SOCK_STREAM, proto=0, fileno=None):
         super().__init__(family, type, proto, fileno)
         self.connected = False
-        self.IP = "192.168.0.202" #server details
+        self.IP = "192.168.0.200" #server details
         self.PORT = 9090
         self.buddy = None
         self.state = "connecting"
+        self.text = None
         self.connect((self.IP,self.PORT))
         print(self.recv(1024).decode("utf-8"))#greeting from the server
         self.contacts = pickle.loads(self.recv(4096))
-        print(self.contacts)
+        print("Contacts:",self.contacts)
         self.up = thr.Thread(target= self.updater)
         self.up.start()
         self.protocols = ["Ass","Sym"]
@@ -44,7 +45,7 @@ class Client(soc.socket):
         #picklefile_s = open('buffer', 'wb')
         #m = pickle.dump(msg,picklefile_s)
         #picklefile_s.close()
-        print(msg.info())
+        msg.info()
         m = pickle.dumps(msg)
         self.send(m)
         
@@ -73,33 +74,26 @@ class Client(soc.socket):
                     print(f"Client {action.source} wants to chat with you")
                     #decision = "accept"#make actual decision
                     #self.connected = True
-
                 if action.type == "response": #and self.buddy == action.source:
-                        print(action.text)
                         if action.text == "accept":
                             self.connected = True
                             self.state = "accepted"
                         else:
                             self.state = "rejected"
-                
-
-            print("Connected with your buddy")
+                            
             while self.connected:
                 action = pickle.loads(self.recv(4096)) #Pickle object
-                if action.type == "message":
-                    print(f"From {action.source}:",action[3])
+                if action.type == "message" and action.source == self.buddy:
+                    print(f"From {action.source}:",action.text)
+                    self.state = "received"
+                    self.text = action.text
     
     def response(self, decision):
         self.send_msg("response", self.buddy, decision)
 
     def initialiser(self, protocols, partner): 
-            #r = int(input("Choose partner (number):"))
-            #self.protocols[0] = input("Choose assymetric protocol (RSA or DH):")
-            #self.protocols[1] = input("Choose symmetric (Vernam or Feistel):")#this will be substitued with actual gui
-        print("Partner:", partner)
         self.send_msg("request", self.contacts[partner], protocols[0]+" "+protocols[1])
-        print("Waiting...") #Na class message (maybe) + sekne se na init()
-
+        
 
 
     def running(self):

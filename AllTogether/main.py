@@ -18,22 +18,29 @@ import sys
 
     
 def gui_handler():
-    print("Update:", window.state)
     if window.state == "intro":
         window.intro()
-    elif window.state == "making_request":
-        print(loco.contacts) 
+    elif window.state == "making_request": 
         arg = []
         for c in loco.contacts:
             arg.append(c[0]+str(c[1])) 
         window.making_request(arg) 
     elif window.state == "waiting_for_response":
         loco.initialiser(protocols,window.partner)
+    
     elif window.state == "response":
         pass
+    
+    elif window.state == "sending":
+        loco.send_msg("message",loco.buddy, window.sc.text_edit.toPlainText())
+        window.state = "chatroom"
+        loco.state = "in_call"
+    
     elif window.state == "answered_request":
         if window.decision:
             loco.response("accept")
+            loco.connected = True
+            loco.send_msg("buffer",loco.getsockname(), "buffer")
             window.chatroom()#protocols
             loco.state = "in_call"
         else:
@@ -45,7 +52,6 @@ def gui_handler():
  
 
 def cli_handler():
-    print("Update:", loco.state)    
     if loco.state == "received_request":
         window.response(loco.buddy, loco.protocols)
 
@@ -57,7 +63,9 @@ def cli_handler():
         window.waiting_for_response("Rejected")
         loco.state = "connecting"
         window.intro()
-        
+    if loco.state == "received":
+        window.sc.text_display.append(f"Buddy: {loco.text}")
+        loco.state = "in_call"
 class Worker(QObject):
     finished = pyqtSignal()
     gui_change = pyqtSignal()
@@ -71,12 +79,9 @@ class Worker(QObject):
             if window.state != pre_g:
                 self.gui_change.emit()
                 pre_g = window.state
-                print("Check_win:", window.state)
             if loco.state != pre_c:
                 self.cli_change.emit()
                 pre_c = loco.state
-                print("Check_win:", window.state)
-        self.finished.emit()
         
 
 if __name__ == "__main__":

@@ -37,12 +37,18 @@ class Scene(QMainWindow):
 
     def chatroom(self):
         self.state = "chatroom"
-        print("COol")
         self.sc = Chatroom()
         self.setCentralWidget(self.sc)
+        self.sc.send_button.clicked.connect(self.send_message)
+    
+    def send_message(self):
+        # Get the text from the text edit widget
+        message = self.sc.text_edit.toPlainText()
+        # Append the message to the text edit
+        self.sc.text_display.append(f"You: {message}")
+        self.state = "sending"
 
     def making_request(self, contacts):
-        print("Making request")
         self.state = "making_request"
         self.sc = RequestMaker(contacts)
         self.setCentralWidget(self.sc)
@@ -50,7 +56,7 @@ class Scene(QMainWindow):
         titles = ["Feistel", "RSA", "DH", "Vernam"]
         
         for i in range(len(pro_buttons)):
-            pro_buttons[i].clicked.connect(lambda idk, arg = (i, pro_buttons[i], pro_buttons[len(titles)-1-i]): self.protocols(titles[arg[0]], arg[1],arg[2]))
+            pro_buttons[i].clicked.connect(lambda idk, arg = (i, pro_buttons[i], pro_buttons[len(titles)-1-i]): self.protoco(titles[arg[0]], arg[1],arg[2]))
             pro_buttons[i].setCheckable(True)
         
         self.sc.send_button.setEnabled(False)
@@ -74,7 +80,6 @@ class Scene(QMainWindow):
                     contact_buttons[i].setChecked(True)
                     contacts_ready = True
                     self.partner = i
-                    print(self.partner)
                 else:
                     contact_buttons[i].setChecked(False)
                     
@@ -83,7 +88,7 @@ class Scene(QMainWindow):
         else:
             self.sc.send_button.setEnabled(False)
         
-    def protocols(self, pro, button, uncheck_button):
+    def protoco(self, pro, button, uncheck_button):
         i = int(pro in ["Vernam", "Feistel"])
         if not button.isChecked():
             protocols[i] = ""
@@ -263,6 +268,33 @@ class RequestReciever(QWidget):
 
         self.setLayout(main_layout)
 
+class Chatroom(QWidget):
+    def __init__(self):
+        super().__init__()
+        # Create the text edit widget for displaying messages
+        self.text_display = QTextEdit("sfddsf")
+        self.text_display.setReadOnly(True)
+        #self.text_display.setFontSize(23)
+        self.text_edit = QTextEdit("Type in your message")
+
+        # Create the "Send" button
+        self.send_button = QPushButton("Send")
+        
+        # Create a vertical layout to hold the text edit and send button
+        layout = QVBoxLayout()
+        layout.addWidget(self.text_display)
+        layout.addWidget(self.text_edit)
+        layout.addWidget(self.send_button)
+
+
+        self.setLayout(layout)
+
+
+
+        # Clear the text edit
+        #self.text_display.clear()
+
+
 class IntroBack(QObject): #backgrounds
     def __init__(self):
         super().__init__()
@@ -280,48 +312,7 @@ class IntroBack(QObject): #backgrounds
         else:
             return
 
-    def p(self):
-        print("o sghid")
-class RequestBack(QObject):
-    finished = pyqtSignal()
-    answer = pyqtSignal(bool)
 
-    def run(self):
-        for i in range(1):
-            time.sleep(1)
-            print(i)
-        self.answer.emit(True)
-        for i in range(1):
-            time.sleep(1)
-            print(i)
-        self.finished.emit()
-
-class ChatBack():
-    pass
-
-
-class Chatroom(QWidget):
-    def __init__(self) -> None:
-        super().__init__()
-        layout = QVBoxLayout()
-        #layout.setAlignment(Qt.AlignCenter)
-        intro_text = QLabel("""DAmmmm
-        """)
-
-        layout.addWidget(intro_text)
-        
-        components = [intro_text]
-        
-        for c in components:
-            c.setAlignment(Qt.AlignCenter)
-            c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
-            c.setFont(QFont("Ariel", 20))
-            c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        #self.continue_button.setStyleSheet("")
-
-        layout.setContentsMargins(200, 100, 200, 100)
-        self.setLayout(layout)
 
 
 

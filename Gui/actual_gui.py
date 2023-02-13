@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 from PyQt5.QtCore import * 
 from PyQt5.QtGui import * 
-import asyncio
+from PyQt5.QtGui import QColor, QTextCursor
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QHBoxLayout, QGridLayout
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
@@ -33,11 +33,10 @@ class Scene(QMainWindow):
 
     def chatroom(self):
         print("COol")
-        self.sc = Chatroom()
+        self.sc = ChatWindow()
         self.setCentralWidget(self.sc)
 
     def making_request(self):
-        self.swap.emit("making_request")
         print("Making request")
         self.sc = RequestMaker()
         self.setCentralWidget(self.sc)
@@ -49,7 +48,7 @@ class Scene(QMainWindow):
             pro_buttons[i].setCheckable(True)
         
         self.sc.send_button.setEnabled(False)
-        self.sc.send_button.clicked.connect(self.intro)#send request
+        self.sc.send_button.clicked.connect(self.waiting_for_response)#send request
         self.sc.cancel_button.clicked.connect(self.intro)
         self.show()
         #contacts
@@ -106,28 +105,12 @@ class Scene(QMainWindow):
         self.sc.reject_button.clicked.connect(self.intro)
         self.show()
 
-    async def waiting_for_response(self):
+    def waiting_for_response(self):
         print("dfvfs")
         self.sc = Waiting()
         self.setCentralWidget(self.sc)
         self.sc.decision.setText("Answer")
         self.show()
-        self.thread1 = QThread()
-        # Step 3: Create a worker object
-        self.worker1 = RequestBack()
-        
-        # Step 4: Move worker to the thread
-        self.worker1.moveToThread(self.thread1)
-
-        self.thread1.started.connect(self.worker1.run)
-        self.worker1.finished.connect(self.thread1.quit)
-        self.worker1.finished.connect(self.worker1.deleteLater)
-        self.thread1.finished.connect(self.thread1.deleteLater)
-        self.worker1.finished.connect(self.chatroom)
-        self.worker1.answer.connect(lambda x: self.sc.decision.setText(str(x)))
-        self.thread1.start()
-        
-        
 
 
 class Intro(QWidget):
@@ -290,6 +273,8 @@ class IntroBack(QObject): #backgrounds
 
     def p(self):
         print("o sghid")
+
+
 class RequestBack(QObject):
     finished = pyqtSignal()
     answer = pyqtSignal(bool)
@@ -334,15 +319,43 @@ class Chatroom(QWidget):
 
 
 
+class ChatWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        # Create the text edit widget for displaying messages
+        self.text_display = QTextEdit("sfddsf")
+        self.text_display.setReadOnly(True)
+        self.text_edit = QTextEdit("Type in your message")
+
+        # Create the "Send" button
+        self.send_button = QPushButton("Send")
+        self.send_button.clicked.connect(self.send_message)
+
+        # Create a vertical layout to hold the text edit and send button
+        layout = QVBoxLayout()
+        layout.addWidget(self.text_display)
+        layout.addWidget(self.text_edit)
+        layout.addWidget(self.send_button)
+
+
+        self.setLayout(layout)
+
+
+    def send_message(self):
+        # Get the text from the text edit widget
+        message = self.text_edit.toPlainText()
+        # Append the message to the text edit
+        self.text_display.append(f"You: {message}")
+        # Clear the text edit
+        #self.text_display.clear()
+
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     #first scene
     window = Scene()
-    #window.intro()
-
-    window.intro()
-    #window.send_request()
+    window.chatroom()
     window.show()    
-    
     sys.exit(app.exec_())
     
