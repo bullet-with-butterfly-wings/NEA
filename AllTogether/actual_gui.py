@@ -11,35 +11,40 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSizePol
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 from threading import Timer
 
-
+partne = -1
 protocols = ["",""]
-contacts = ["John", "James", "Jane", "Jonas"]
+#contacts = ["John", "James", "Jane", "Jonas"]
 
 
 class Scene(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setGeometry(400, 200, 1000, 700)
+        self.state = "intro"
+        self.partner = -1
+        self.decision = None
         self.setWindowTitle("Encryption Engine")
-        self.swap = pyqtSignal(str)
         
     def intro(self):
         self.sc = Intro()
+        self.state = "intro"
         self.setCentralWidget(self.sc)
         #buttons 
-        self.sc.continue_button.clicked.connect(self.making_request)
+        self.sc.continue_button.clicked.connect(lambda x, arg = "making_request":self.dummy(arg))
         self.show()
-        
+    def dummy(self, state):
+        self.state = state
 
     def chatroom(self):
+        self.state = "chatroom"
         print("COol")
         self.sc = Chatroom()
         self.setCentralWidget(self.sc)
 
-    def making_request(self):
-        self.swap.emit("making_request")
+    def making_request(self, contacts):
         print("Making request")
-        self.sc = RequestMaker()
+        self.state = "making_request"
+        self.sc = RequestMaker(contacts)
         self.setCentralWidget(self.sc)
         pro_buttons = [self.sc.feistel_button, self.sc.rsa_button, self.sc.dh_button,  self.sc.vernam_button]
         titles = ["Feistel", "RSA", "DH", "Vernam"]
@@ -49,7 +54,7 @@ class Scene(QMainWindow):
             pro_buttons[i].setCheckable(True)
         
         self.sc.send_button.setEnabled(False)
-        self.sc.send_button.clicked.connect(self.intro)#send request
+        self.sc.send_button.clicked.connect(lambda: self.waiting_for_response("Answer"))#send request
         self.sc.cancel_button.clicked.connect(self.intro)
         self.show()
         #contacts
@@ -60,6 +65,7 @@ class Scene(QMainWindow):
 
     #these two functions governs contacts and protocols buttons    
     def contacts(self,pressed):
+        self.partner = -1
         if not contact_buttons[pressed].isChecked():
             contacts_ready = False
         else:
@@ -67,8 +73,8 @@ class Scene(QMainWindow):
                 if i == pressed:
                     contact_buttons[i].setChecked(True)
                     contacts_ready = True
-                    global call
-                    call = contacts[i]
+                    self.partner = i
+                    print(self.partner)
                 else:
                     contact_buttons[i].setChecked(False)
                     
@@ -77,7 +83,6 @@ class Scene(QMainWindow):
         else:
             self.sc.send_button.setEnabled(False)
         
-
     def protocols(self, pro, button, uncheck_button):
         i = int(pro in ["Vernam", "Feistel"])
         if not button.isChecked():
@@ -98,35 +103,24 @@ class Scene(QMainWindow):
         
         
 
-    def response(self):
-        print("fd")
-        self.sc = RequestReciever("john", "Rsa")
+    def response(self, partner, protocols):
+        self.state = "recieved_request"
+        self.sc = RequestReciever("("+partner[0]+str(partner[1])+")", " ".join(protocols))
         self.setCentralWidget(self.sc)
-        self.sc.accept_button.clicked.connect(self.chatroom)
-        self.sc.reject_button.clicked.connect(self.intro)
+        self.sc.accept_button.clicked.connect(lambda: self.ans(True))
+        self.sc.reject_button.clicked.connect(lambda: self.ans(False))
         self.show()
+    
+    def ans(self, decision):
+        self.decision = decision
+        self.state = "answered_request"
 
-    async def waiting_for_response(self):
-        print("dfvfs")
+    def waiting_for_response(self, text):
+        self.state = "waiting_for_response"
         self.sc = Waiting()
         self.setCentralWidget(self.sc)
-        self.sc.decision.setText("Answer")
+        self.sc.decision.setText(text)
         self.show()
-        self.thread1 = QThread()
-        # Step 3: Create a worker object
-        self.worker1 = RequestBack()
-        
-        # Step 4: Move worker to the thread
-        self.worker1.moveToThread(self.thread1)
-
-        self.thread1.started.connect(self.worker1.run)
-        self.worker1.finished.connect(self.thread1.quit)
-        self.worker1.finished.connect(self.worker1.deleteLater)
-        self.thread1.finished.connect(self.thread1.deleteLater)
-        self.worker1.finished.connect(self.chatroom)
-        self.worker1.answer.connect(lambda x: self.sc.decision.setText(str(x)))
-        self.thread1.start()
-        
         
 
 
@@ -163,7 +157,7 @@ class Intro(QWidget):
         self.setLayout(layout)
 
 class RequestMaker(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, contacts) -> None:
         super().__init__()
         label = QLabel("Select protocols:")
         label.setAlignment(Qt.AlignCenter)

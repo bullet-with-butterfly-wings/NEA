@@ -6,6 +6,8 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 from PyQt5.QtCore import * 
 from PyQt5.QtGui import * 
 import asyncio
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QLabel, QPushButton,QButtonGroup
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QHBoxLayout, QGridLayout
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
@@ -13,18 +15,17 @@ from threading import Timer
 
 
 protocols = ["",""]
-contacts = ["John", "James", "Jane", "Jonas"]
-
 
 class Scene(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setGeometry(400, 200, 1000, 700)
         self.setWindowTitle("Encryption Engine")
-        self.swap = pyqtSignal(str)
+        self.state = ""
         
     def intro(self):
         self.sc = Intro()
+        self.state = "intro"
         self.setCentralWidget(self.sc)
         #buttons 
         self.sc.continue_button.clicked.connect(self.making_request)
@@ -36,30 +37,41 @@ class Scene(QMainWindow):
         self.sc = Chatroom()
         self.setCentralWidget(self.sc)
 
-    def making_request(self):
-        self.swap.emit("making_request")
+    def making_request(self, contacts):
+        self.state = "making_request"
         print("Making request")
-        self.sc = RequestMaker()
+        self.sc = RequestMaker(contacts)
         self.setCentralWidget(self.sc)
-        pro_buttons = [self.sc.feistel_button, self.sc.rsa_button, self.sc.dh_button,  self.sc.vernam_button]
-        titles = ["Feistel", "RSA", "DH", "Vernam"]
         
+        #contacts
+        for i in range(len(self.sc.contact_buttons)):
+            self.sc.contact_buttons[i].setCheckable(True)
+            self.sc.contact_buttons[i].clicked.connect(lambda idk, arg = (i,self.sc.contact_buttons): self.contacts(arg))
+        
+        pro_buttons = self.sc.protocols_buttons.buttons()
         for i in range(len(pro_buttons)):
-            pro_buttons[i].clicked.connect(lambda idk, arg = (i, pro_buttons[i], pro_buttons[len(titles)-1-i]): self.protocols(titles[arg[0]], arg[1],arg[2]))
-            pro_buttons[i].setCheckable(True)
+            pro_buttons[i].clicked.connect(lambda x, arg = (i,pro_buttons, self.sc.c_ready): protocols(arg[0],arg[1],arg[2]))
         
         self.sc.send_button.setEnabled(False)
         self.sc.send_button.clicked.connect(self.intro)#send request
         self.sc.cancel_button.clicked.connect(self.intro)
         self.show()
-        #contacts
         
-        for i in range(len(contact_buttons)):
-            contact_buttons[i].setCheckable(True)
-            contact_buttons[i].clicked.connect(lambda idk, arg = i: self.contacts(arg))
+    def protocols(self, i, pro_buttons, c_ready):
+        symmetry = int(i > 2)
+        if not pro_buttons[i].isChecked():
+            protocols[i] = ""
+        else: 
+            protocols[i] = pro_buttons[i].text()
+            pro_buttons[symmetry*2+( i+1 %2)].setChecked(False)
+        
+        if (protocols[0] != "" and protocols[1] != "") and c_ready:
+            self.sc.send_button.setEnabled(True)
+        else:
+            self.sc.send_button.setEnabled(False)
 
     #these two functions governs contacts and protocols buttons    
-    def contacts(self,pressed):
+    def contacts(self,pressed, contact_buttons):
         if not contact_buttons[pressed].isChecked():
             contacts_ready = False
         else:
@@ -67,8 +79,6 @@ class Scene(QMainWindow):
                 if i == pressed:
                     contact_buttons[i].setChecked(True)
                     contacts_ready = True
-                    global call
-                    call = contacts[i]
                 else:
                     contact_buttons[i].setChecked(False)
                     
@@ -78,28 +88,8 @@ class Scene(QMainWindow):
             self.sc.send_button.setEnabled(False)
         
 
-    def protocols(self, pro, button, uncheck_button):
-        i = int(pro in ["Vernam", "Feistel"])
-        if not button.isChecked():
-            protocols[i] = ""
-        else: 
-            protocols[i] = pro
-            uncheck_button.setChecked(False)
-        
-        c_ready = False
-        for c in contact_buttons:
-            if c.isChecked():
-                c_ready = True 
-
-        if (protocols[0] != "" and protocols[1] != "") and c_ready:
-            self.sc.send_button.setEnabled(True)
-        else:
-            self.sc.send_button.setEnabled(False)
-        
-        
-
     def response(self):
-        print("fd")
+        print("Response")
         self.sc = RequestReciever("john", "Rsa")
         self.setCentralWidget(self.sc)
         self.sc.accept_button.clicked.connect(self.chatroom)
@@ -163,12 +153,22 @@ class Intro(QWidget):
         self.setLayout(layout)
 
 class RequestMaker(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, contacts) -> None:
         super().__init__()
+        self.c_ready = False
         label = QLabel("Select protocols:")
         label.setAlignment(Qt.AlignCenter)
 
         # Create pro_buttons
+        titles = ["RSA","DH","Vernam","Feistel"]
+        self.protocols_buttons = []
+        for i in range(len(titles)):
+            button = QPushButton(titles[i])
+            button.setCheckable(True)
+            button.setMinimumSize(QSize(80, 40))
+            self.protocols_buttons.append(button)
+        
+        """
         self.rsa_button = QPushButton("RSA")
         self.rsa_button.setMinimumSize(QSize(80, 40))
         self.dh_button = QPushButton("Diffie-Hellman")
@@ -177,7 +177,7 @@ class RequestMaker(QWidget):
         self.vernam_button.setMinimumSize(QSize(80, 40))
         self.feistel_button = QPushButton("Feistel")
         self.feistel_button.setMinimumSize(QSize(80, 40))
-
+        """
         self.send_button = QPushButton("Send")
         self.send_button.setMinimumSize(QSize(80, 40))
         self.cancel_button = QPushButton("Cancel")
@@ -190,23 +190,23 @@ class RequestMaker(QWidget):
         layout = QGridLayout()
         layout.addWidget(label, 0, 0, 1, 2)
         layout.addWidget(QLabel("Assymetric encryption...", self), 1, 0, 1, 2)
-        layout.addWidget(self.rsa_button, 2, 0)
-        layout.addWidget(self.dh_button, 2, 1)
+        layout.addWidget(pro_buttons[0], 2, 0)
+        layout.addWidget(pro_buttons[1], 2, 1)
         layout.addWidget(QLabel("Symetric encryption...", self), 3, 0, 1, 2)
-        layout.addWidget(self.vernam_button, 4, 0)
-        layout.addWidget(self.feistel_button, 4, 1)
+        layout.addWidget(pro_buttons[2], 4, 0)
+        layout.addWidget(pro_buttons[3], 4, 1)
         layout.addItem(QSpacerItem(0, 20), 5, 0, 1, 2)
         layout.addWidget(self.send_button, 6, 1)
         layout.addWidget(self.cancel_button, 6, 0)
 
         # Create a separate vertical layout for contacts pro_buttons
         contacts_layout = QVBoxLayout()
-        global contact_buttons 
-        contact_buttons = []
-        for c in contacts:
-            contact_buttons.append(QPushButton(c))
-            contact_buttons[-1].setMinimumSize(QSize(80, 40))
-            contacts_layout.addWidget(contact_buttons[-1])
+        self.contact_buttons = QButtonGroup()
+        for i in range(len(contacts)):
+            button = QPushButton(contacts[i])
+            button.setMinimumSize(QSize(80, 40))
+            self.contact_buttons.addButton(button,i)
+            contacts_layout.addWidget(self.contact_buttons.button(i))
         
         contacts_layout.setContentsMargins(0, 0, 0, 0)
 

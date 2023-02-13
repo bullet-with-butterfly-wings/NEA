@@ -2,6 +2,11 @@ import socket as soc
 import threading as thr
 import pickle
 import time
+import sys
+from PyQt5.QtWidgets import QApplication
+import actual_gui  
+from actual_gui import Scene
+
 
 
 class Message: #does not work, new format [type, receiver, source, text]
@@ -19,9 +24,13 @@ class Client(soc.socket):
         super().__init__(family, type, proto, fileno)
         self.Name = name
         self.connected = False
-        self.IP = "192.168.0.202" #server details
+        self.IP = "192.168.0.200" #server details
         self.PORT = 9090
         self.buddy = None
+
+        self.window = Scene()
+        self.window.intro()
+
         self.connect((self.IP,self.PORT))
         print(self.recv(1024).decode("utf-8"))#greeting from the server
         self.send(self.Name.encode("utf-8"))
@@ -30,8 +39,9 @@ class Client(soc.socket):
         self.up = thr.Thread(target= self.updater)
         self.up.start()
         self.protocols = ["Ass","Sym"]
-        self.initialiser()
-        self.running()
+        self.window.swap.emit.connect(self.initialiser)
+        #self.initialiser()
+        #self.running()
     
     def send_msg(self, type, receiver, text = None):
         if type == "request":
@@ -67,7 +77,6 @@ class Client(soc.socket):
                 if action.type == "request":
                     print(f"Client {action.source[0]} wants to chat with you")
                     decision = "accept"#make actual decision
-                    #self.send_msg(Message("response", self.contacts[self.clients.index(action.source)], (self.Name,self.getsockname()), decision))
                     self.send_msg("response", action.source, decision)
                     self.connected = True
 
@@ -86,6 +95,7 @@ class Client(soc.socket):
             r = int(input("Choose partner (number):"))
             self.protocols[0] = input("Choose assymetric protocol (RSA or DH):")
             self.protocols[1] = input("Choose symmetric (Vernam or Feistel):")#this will be substitued with actual gui
+            
             self.send_msg("request", self.contacts[r], self.protocols[0]+" "+self.protocols[1])
             print("Waiting...") #Na class message (maybe) + sekne se na init()
             time.sleep(10)
@@ -105,4 +115,9 @@ class Client(soc.socket):
 
 if __name__ == "__main__":
     Name = input()
+    app = QApplication(sys.argv)
     loco = Client(name=Name)
+    loco.window.show()
+
+    sys.exit(app.exec_())
+

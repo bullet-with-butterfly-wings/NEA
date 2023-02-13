@@ -2,6 +2,10 @@ import socket as soc
 import threading as thr
 import pickle
 import time
+import sys
+import actual_gui  
+from actual_gui import Scene
+
 
 
 class Message: #does not work, new format [type, receiver, source, text]
@@ -15,31 +19,28 @@ class Message: #does not work, new format [type, receiver, source, text]
         print((self.type,self.receiver,self.source,self.text))
 
 class Client(soc.socket):
-    def __init__(self, family=soc.AF_INET, type=soc.SOCK_STREAM, proto=0, fileno=None, name=None):
+    def __init__(self, family=soc.AF_INET, type=soc.SOCK_STREAM, proto=0, fileno=None):
         super().__init__(family, type, proto, fileno)
-        self.Name = name
         self.connected = False
         self.IP = "192.168.0.202" #server details
         self.PORT = 9090
         self.buddy = None
+        self.state = "connecting"
         self.connect((self.IP,self.PORT))
         print(self.recv(1024).decode("utf-8"))#greeting from the server
-        self.send(self.Name.encode("utf-8"))
         self.contacts = pickle.loads(self.recv(4096))
         print(self.contacts)
         self.up = thr.Thread(target= self.updater)
         self.up.start()
         self.protocols = ["Ass","Sym"]
-        self.initialiser()
-        self.running()
-    
+
     def send_msg(self, type, receiver, text = None):
         if type == "request":
             self.buddy = receiver
         if text:
-            msg = Message(type,receiver,(self.Name,self.getsockname()), text)#Message(type,receiver,(self.Name,self.getsockname()),text)
+            msg = Message(type,receiver,self.getsockname(), text)#Message(type,receiver,(self.Name,self.getsockname()),text)
         else:
-            msg = Message(type,receiver,(self.Name,self.getsockname())) #Message(type,receiver,(self.Name,self.getsockname()))
+            msg = Message(type,receiver,self.getsockname()) #Message(type,receiver,(self.Name,self.getsockname()))
         #picklefile_s = open('buffer', 'wb')
         #m = pickle.dump(msg,picklefile_s)
         #picklefile_s.close()
@@ -62,33 +63,39 @@ class Client(soc.socket):
                 #now depends
                 if action.type == "new_client":
                     new = action.text.split()#nechto crashnout            
-                    self.contacts.append((new[0],(new[1],int(new[2]))))
-                    print(self.contacts) #later sort out if list or str
+                    if self.getsockname() != (new[0],int(new[1])):
+                        self.contacts.append((new[0],int(new[1])))
+                        print(self.contacts) #later sort out if list or str
                 if action.type == "request":
-                    print(f"Client {action.source[0]} wants to chat with you")
-                    decision = "accept"#make actual decision
-                    #self.send_msg(Message("response", self.contacts[self.clients.index(action.source)], (self.Name,self.getsockname()), decision))
-                    self.send_msg("response", action.source, decision)
-                    self.connected = True
+                    self.state = "received_request"
+                    self.buddy = action.source
+                    self.protocols = action.text.split(" ")
+                    print(f"Client {action.source} wants to chat with you")
+                    #decision = "accept"#make actual decision
+                    #self.connected = True
 
                 if action.type == "response" and self.buddy == action.source:
                         print(action.text)
                         if action.text == "accept":
                             self.connected = True
+                
+
             print("Connected with your buddy")
             while self.connected:
                 action = pickle.loads(self.recv(4096)) #Pickle object
                 if action.type == "message":
-                    print(f"From {action.source[0]}:",action[3])
+                    print(f"From {action.source}:",action[3])
     
-    def initialiser(self):
-        while not self.connected: 
-            r = int(input("Choose partner (number):"))
-            self.protocols[0] = input("Choose assymetric protocol (RSA or DH):")
-            self.protocols[1] = input("Choose symmetric (Vernam or Feistel):")#this will be substitued with actual gui
-            self.send_msg("request", self.contacts[r], self.protocols[0]+" "+self.protocols[1])
-            print("Waiting...") #Na class message (maybe) + sekne se na init()
-            time.sleep(10)
+    def response(self, decision):
+        self.send_msg("response", self.buddy, decision)
+
+    def initialiser(self, protocols, partner): 
+            #r = int(input("Choose partner (number):"))
+            #self.protocols[0] = input("Choose assymetric protocol (RSA or DH):")
+            #self.protocols[1] = input("Choose symmetric (Vernam or Feistel):")#this will be substitued with actual gui
+        print("Partner:", partner)
+        self.send_msg("request", self.contacts[partner], protocols[0]+" "+protocols[1])
+        print("Waiting...") #Na class message (maybe) + sekne se na init()
 
 
 
@@ -102,7 +109,5 @@ class Client(soc.socket):
                 self.connect = False
                 break
 
-
 if __name__ == "__main__":
-    Name = input()
-    loco = Client(name=Name)
+    s = Client()

@@ -1,6 +1,9 @@
 
 import sys
 import time
+import threading
+from client import *
+import multiprocessing
 from PyQt5.QtWidgets import * 
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 from PyQt5.QtCore import * 
@@ -21,39 +24,55 @@ class Scene(QMainWindow):
         super().__init__()
         self.setGeometry(400, 200, 1000, 700)
         self.setWindowTitle("Encryption Engine")
-        self.swap = pyqtSignal(str)
-        
+    
     def intro(self):
         self.sc = Intro()
+        Name = input()
         self.setCentralWidget(self.sc)
         #buttons 
         self.sc.continue_button.clicked.connect(self.making_request)
         self.show()
-        
+        #prepis to na normalni threading
+        self.thread = QThread()
+        self.worker = IntroBack()
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        self.worker.finished.connect(self.response)
+        self.thread.start()
+
 
     def chatroom(self):
         print("COol")
         self.sc = Chatroom()
         self.setCentralWidget(self.sc)
+        #buttons
+        #self.sc.continue_button.clicked.connect(self.making_request)
+
 
     def making_request(self):
-        self.swap.emit("making_request")
-        print("Making request")
+        self.thread.quit()
+        self.worker.on = False
+        print("fv")
+        #self.worker.
+
         self.sc = RequestMaker()
         self.setCentralWidget(self.sc)
         pro_buttons = [self.sc.feistel_button, self.sc.rsa_button, self.sc.dh_button,  self.sc.vernam_button]
         titles = ["Feistel", "RSA", "DH", "Vernam"]
         
+
         for i in range(len(pro_buttons)):
             pro_buttons[i].clicked.connect(lambda idk, arg = (i, pro_buttons[i], pro_buttons[len(titles)-1-i]): self.protocols(titles[arg[0]], arg[1],arg[2]))
             pro_buttons[i].setCheckable(True)
         
         self.sc.send_button.setEnabled(False)
-        self.sc.send_button.clicked.connect(self.intro)#send request
+        self.sc.send_button.clicked.connect(lambda: asyncio.run(self.waiting_for_response()))#asyncio.run()
         self.sc.cancel_button.clicked.connect(self.intro)
         self.show()
         #contacts
-        
         for i in range(len(contact_buttons)):
             contact_buttons[i].setCheckable(True)
             contact_buttons[i].clicked.connect(lambda idk, arg = i: self.contacts(arg))
