@@ -33,7 +33,7 @@ class Client(soc.socket):
         print("Contacts:",self.contacts)
         self.up = thr.Thread(target= self.updater)
         self.up.start()
-        self.protocols = ["Ass","Sym"]
+        self.protocols = ["",""]
 
     def send_msg(self, type, receiver, text = None):
         if type == "request":

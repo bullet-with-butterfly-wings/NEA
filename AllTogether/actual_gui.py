@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QHBoxLayout, QGridLayout
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 from threading import Timer
+from subprocess import call
 
 partne = -1
 protocols = ["",""]
@@ -20,11 +21,11 @@ class Scene(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setGeometry(400, 200, 1000, 700)
-        self.state = "intro"
         self.partner = -1
         self.decision = None
         self.setWindowTitle("Encryption Engine")
-        
+        self.intro()
+
     def intro(self):
         self.sc = Intro()
         self.state = "intro"
@@ -32,6 +33,7 @@ class Scene(QMainWindow):
         #buttons 
         self.sc.continue_button.clicked.connect(lambda x, arg = "making_request":self.dummy(arg))
         self.show()
+        
     def dummy(self, state):
         self.state = state
 
@@ -42,10 +44,22 @@ class Scene(QMainWindow):
         self.sc.send_button.clicked.connect(self.send_message)
     
     def send_message(self):
-        # Get the text from the text edit widget
-        message = self.sc.text_edit.toPlainText()
-        # Append the message to the text edit
-        self.sc.text_display.append(f"You: {message}")
+        self.plainText = self.sc.text_edit.toPlainText()
+        "Something Plain -> Cipher"
+        f = open("buffer.txt", "w")
+        f.write(self.plainText)
+        f.close()
+        #execute ciphering
+        print("Should Cipher")
+        print(protocols)
+        if protocols[1] == "Vernam":
+            print("Ciphering")
+            call(["./vernam", "12345678901234567890123456789012"])
+        time.sleep(10)
+        f = open("buffer.txt", "r")
+        self.cipherText = f.read()
+        f.close()
+        self.sc.text_display.append(f"You  PlainText:{self.plainText} \n    CipherText: {self.cipherText}")
         self.state = "sending"
 
     def making_request(self, contacts):
@@ -106,7 +120,11 @@ class Scene(QMainWindow):
         else:
             self.sc.send_button.setEnabled(False)
         
-        
+    def spojka(self):
+        return protocols
+    def solution(self, p):
+        protocols[0] = p[0]
+        protocols[1] = p[1]
 
     def response(self, partner, protocols):
         self.state = "recieved_request"
