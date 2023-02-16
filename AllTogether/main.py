@@ -38,13 +38,16 @@ def gui_handler():
             loco.response("accept")
             loco.connected = True
             loco.send_msg("buffer",loco.getsockname(), "buffer")
-            window.chatroom()#protocols
             loco.state = "in_call"
             if loco.protocols == ["",""]:
                 loco.protocols[0] = window.spojka()[0]
                 loco.protocols[1] = window.spojka()[1]        
             else:
                 window.solution(loco.protocols)
+            if loco.protocols[0] == "RSA":
+                window.rsa(loco.protocols[1])#protocols
+            else:
+                window.dh(loco.protocols[1])
         else:
             loco.response("reject")
             window.protocols = ("","")
@@ -52,7 +55,6 @@ def gui_handler():
             window.intro()
             loco.state = "connecting"
  
-
 def cli_handler():
     if loco.state == "received_request":
         window.response(loco.buddy, loco.protocols)
@@ -65,7 +67,14 @@ def cli_handler():
             loco.protocols[1] = window.spojka()[1]        
         else:
             window.solution(loco.protocols)
-        window.chatroom()
+        if loco.protocols[0] == "RSA":
+            window.rsa(loco.protocols[1])#protocols
+        else:
+            window.dh(loco.protocols[1])
+    
+    
+        
+        
     if loco.state == "rejected":
         window.waiting_for_response("Rejected")
         loco.state = "connecting"
@@ -79,7 +88,9 @@ def cli_handler():
         print(loco.protocols[1])
         if loco.protocols[1] == "Vernam":
             print("Decrypting")
-            call(["./vernam", "12345678901234567890123456789012"])
+            call(["./vernam", loco.symm_key])
+        else:
+            call(["./feistel", "0", loco.symm_key])
         #execute decrypting
         #time.sleep(2)
         f = open("buffer.txt", "r")
@@ -87,6 +98,7 @@ def cli_handler():
         f.close()
         window.sc.text_display.append(f"Buddy CipherText:{cipherText} \n     PlainText: {plainText}")
         loco.state = "in_call"
+
 class Worker(QObject):
     finished = pyqtSignal()
     gui_change = pyqtSignal()

@@ -1,63 +1,77 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <windows.h>
-#include <openssl/sha.h> 
+#include<unistd.h>
 
 # define BLOCK 64 
-# define KEY_LENGTH 10
-# define N 5
+# define KEY_LENGTH 20
+# define N 2
 
 //ADD keys
-int main(void) {
- //Set up
-  void sha256(char *string, char outputBuffer[32]);
-  void copy_for_sign(unsigned char * dest, unsigned char * source, int l);
-  void convert(int * output, char* str);
-  void print_arr(int input[], int l);
-  void e_round(unsigned char * L, unsigned char * R, unsigned char * K);
-  void copy(unsigned char dest[], char source[], int l);
-  //key
-  char K[KEY_LENGTH] = {"\0"};
-  printf("Enter your key (max %d characters):",KEY_LENGTH-1);
-  scanf("%[^\n]%*c", K);
-  unsigned char K_now[KEY_LENGTH/N];
-  //strcpy(K,"");
-  memcpy(K_now, &K[0],KEY_LENGTH/N);
-
-  //message
-  char message[BLOCK];
-  memset(message, 0, BLOCK);
-  printf("Enter your message:");
-  scanf("%[^\n]%*c", message);
-  //strcpy(message,"");
+int main(int argc, char* argv[]) {
+	//Set up
+	int encrypt = atoi(argv[1]);
+	void print_arr(int input[], int l);
+	void e_round(char* L, char* R, char* K);
+	//key
+	char K[KEY_LENGTH+1] = {"\0"}; //"Enter your key (max %d characters):"
+	strncpy(K,argv[2], KEY_LENGTH);
+	//scanf("%[^\n]%*c", K);
+	char K_now[KEY_LENGTH/N+1] = {"\0"}; //ending with zero
+	strncpy(K_now, K, KEY_LENGTH/N);
+	//message
   
-  //fprintf(fp, "%s \n",K);
-  //Ecryption
-  unsigned char L[BLOCK/2] = {0}, R[BLOCK/2] = {0};
-  copy(L,message, BLOCK/2);
-  copy(R,message+BLOCK/2,BLOCK/2);
-
-  printf("L: %*.*s \n", 32, 32, L);
-  printf("R: %s \n", R);  
-
-
-  for (int k = 0; k < N; k++){  
-    printf("%d round \n",k+1);
-    memcpy(K_now, &K[k*KEY_LENGTH/N], KEY_LENGTH/N);
-    e_round(L,R, K_now);  
-  }
-  FILE *f1 = fopen("data.bin", "wb");
-  if (f1) {
-      fputs(L[0], f1);
-      fwrite(L, 1, BLOCK/2, f1);
-      fwrite(R, 1, BLOCK/2, f1);
-      fclose(f1);
+	char message[BLOCK] = {"\0"};
+	FILE *file;
+    char *filename = "buffer.txt";
+    FILE *fp = fopen(filename, "r");
+    if (fp == NULL) {
+        perror("Error opening file");
+        return 1;
     }
- 
-  Sleep(100000);
+    // Get the size of the file
+    fseek(fp, 0L, SEEK_END);
+    int file_size = ftell(fp);
+    rewind(fp);
+    fread(message, file_size, 1, fp);
+    //printf("%s \n", buffer);
+	fclose(fp);
+	//fprintf(fp, "%s \n",K);
+    //Ecryption
+	char L[BLOCK/2] = {"\0"}, R[BLOCK/2] = {"\0"};
+	strncpy(L, message, BLOCK/2);
+	strncpy(R,message+BLOCK/2,BLOCK/2);
 
-  return 0;
+	printf("L: %.*s \n", BLOCK/2, L);
+	printf("R: %.*s \n",BLOCK/2, R);  
+	if (encrypt == 1){
+		for (int k = 0; k < N; k++){  
+			printf("%d round:\n",k+1);
+			strncpy(K_now, &K[k*KEY_LENGTH/N], KEY_LENGTH/N);
+			e_round(L,R, K_now);  
+		}
+	}else{
+		char buffer[BLOCK/2];
+		strncpy(buffer,L,BLOCK/2);
+		strncpy(L,R,BLOCK/2);
+		strncpy(R,buffer,BLOCK/2);
+		for (int k = 0; k < N; k++){  
+			strncpy(K_now, &K[(N-k-1)*KEY_LENGTH/N], KEY_LENGTH/N);
+			e_round(L,R, K_now);  
+		}
+		strncpy(buffer,L,BLOCK/2);
+		strncpy(L,R,BLOCK/2);
+		strncpy(R,buffer,BLOCK/2);
+    }
+
+	FILE *f1 = fopen("data.txt", "w");
+	
+	if (f1) {
+    	fwrite(L, 1, BLOCK/2, f1);
+    	fwrite(R, 1, BLOCK/2, f1);
+    	fclose(f1);
+    }
+	return 0;
 }
 
 void print_arr(int* input, int l){
@@ -67,42 +81,191 @@ void print_arr(int* input, int l){
   printf("\n");
 }
 
-void copy(unsigned char * dest, char * source, int l){
-  for (int i = 0; i < l; i++){
-    dest[i] = (unsigned)source[i];
-  }
-}
+
 //it made some warnings about casting
-void copy_for_sign(unsigned char * dest, unsigned char * source, int l){
-  for (int i = 0; i < l; i++){
-    dest[i] = source[i];
-  }
-}
 
-void e_round(unsigned char * L, unsigned char * R, unsigned char * K){
-  char unsigned L_1[BLOCK/2];
-  char unsigned R_1[BLOCK/2];  
-  copy_for_sign(L_1, R, BLOCK/2);
 
-  unsigned char F[BLOCK/2+KEY_LENGTH];
-  memset(F, 0, BLOCK/2+KEY_LENGTH);
-  memcpy(F, R, BLOCK/2);
-  memcpy(F+BLOCK/2, K, KEY_LENGTH);
+void e_round(char* L,char* R, char* K){
+  char buffer[BLOCK/2];
+  char hash[256]; 
+  void sha256(char *string, char out[256]);
 
-  SHA256(F, BLOCK/2 + KEY_LENGTH, R_1);
+  strncpy(buffer, R, BLOCK/2);
+
+  char F[BLOCK/2+KEY_LENGTH] = {"\0"};
+  strncpy(F, R, BLOCK/2);
+  strncpy(F+BLOCK/2, K, KEY_LENGTH);
+  sha256(F, hash);
   //printf("%lld \n", sizeof(R_1));
+
   for(int i = 0; i < BLOCK/2; i++){
-    R[i] = R_1[i]^L[i]; 
+    R[i] = hash[i]^L[i]; 
   }
-  copy_for_sign(L, L_1, BLOCK/2);
-  printf("L: %*.*s \n", 32, 32, L);
-  printf("R: %*.*s \n", 32, 32, R);
+  //strncpy(R+BLOCK/2, "0", 1); //zaplata xd 
+
+  strncpy(L, buffer, BLOCK/2);
+  //printf("L: %.*s \n", BLOCK/2, L);
+  //printf("R: %.*s \n",BLOCK/2, R);
 }
 
-void convert(int * output, char * message){
-   int l = strlen(message);
-   for (int i = 0; i < l;i++){
-      output[i] = (int)(message[i]);
-   }
+
+
+#define uchar unsigned char
+#define uint unsigned int
+
+#define DBL_INT_ADD(a,b,c) if (a > 0xffffffff - (c)) ++b; a += c;
+#define ROTLEFT(a,b) (((a) << (b)) | ((a) >> (32-(b))))
+#define ROTRIGHT(a,b) (((a) >> (b)) | ((a) << (32-(b))))
+
+#define CH(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
+#define MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define EP0(x) (ROTRIGHT(x,2) ^ ROTRIGHT(x,13) ^ ROTRIGHT(x,22))
+#define EP1(x) (ROTRIGHT(x,6) ^ ROTRIGHT(x,11) ^ ROTRIGHT(x,25))
+#define SIG0(x) (ROTRIGHT(x,7) ^ ROTRIGHT(x,18) ^ ((x) >> 3))
+#define SIG1(x) (ROTRIGHT(x,17) ^ ROTRIGHT(x,19) ^ ((x) >> 10))
+
+typedef struct {
+	uchar data[64];
+	uint datalen;
+	uint bitlen[2];
+	uint state[8];
+} SHA256_CTX;
+
+uint k[64] = {
+	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+	0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+	0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+	0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+	0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+	0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+	0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+	0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+};
+
+void SHA256Transform(SHA256_CTX *ctx, uchar data[])
+{
+	uint a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+
+	for (i = 0, j = 0; i < 16; ++i, j += 4)
+		m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
+	for (; i < 64; ++i)
+		m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
+
+	a = ctx->state[0];
+	b = ctx->state[1];
+	c = ctx->state[2];
+	d = ctx->state[3];
+	e = ctx->state[4];
+	f = ctx->state[5];
+	g = ctx->state[6];
+	h = ctx->state[7];
+
+	for (i = 0; i < 64; ++i) {
+		t1 = h + EP1(e) + CH(e, f, g) + k[i] + m[i];
+		t2 = EP0(a) + MAJ(a, b, c);
+		h = g;
+		g = f;
+		f = e;
+		e = d + t1;
+		d = c;
+		c = b;
+		b = a;
+		a = t1 + t2;
+	}
+
+	ctx->state[0] += a;
+	ctx->state[1] += b;
+	ctx->state[2] += c;
+	ctx->state[3] += d;
+	ctx->state[4] += e;
+	ctx->state[5] += f;
+	ctx->state[6] += g;
+	ctx->state[7] += h;
 }
 
+void SHA256Init(SHA256_CTX *ctx)
+{
+	ctx->datalen = 0;
+	ctx->bitlen[0] = 0;
+	ctx->bitlen[1] = 0;
+	ctx->state[0] = 0x6a09e667;
+	ctx->state[1] = 0xbb67ae85;
+	ctx->state[2] = 0x3c6ef372;
+	ctx->state[3] = 0xa54ff53a;
+	ctx->state[4] = 0x510e527f;
+	ctx->state[5] = 0x9b05688c;
+	ctx->state[6] = 0x1f83d9ab;
+	ctx->state[7] = 0x5be0cd19;
+}
+
+void SHA256Update(SHA256_CTX *ctx, uchar data[], uint len)
+{
+	for (uint i = 0; i < len; ++i) {
+		ctx->data[ctx->datalen] = data[i];
+		ctx->datalen++;
+		if (ctx->datalen == 64) {
+			SHA256Transform(ctx, ctx->data);
+			DBL_INT_ADD(ctx->bitlen[0], ctx->bitlen[1], 512);
+			ctx->datalen = 0;
+		}
+	}
+}
+
+void SHA256Final(SHA256_CTX *ctx, uchar hash[])
+{
+	uint i = ctx->datalen;
+
+	if (ctx->datalen < 56) {
+		ctx->data[i++] = 0x80;
+		while (i < 56)
+			ctx->data[i++] = 0x00;
+	}
+	else {
+		ctx->data[i++] = 0x80;
+		while (i < 64)
+			ctx->data[i++] = 0x00;
+		SHA256Transform(ctx, ctx->data);
+		memset(ctx->data, 0, 56);
+	}
+
+	DBL_INT_ADD(ctx->bitlen[0], ctx->bitlen[1], ctx->datalen * 8);
+	ctx->data[63] = ctx->bitlen[0];
+	ctx->data[62] = ctx->bitlen[0] >> 8;
+	ctx->data[61] = ctx->bitlen[0] >> 16;
+	ctx->data[60] = ctx->bitlen[0] >> 24;
+	ctx->data[59] = ctx->bitlen[1];
+	ctx->data[58] = ctx->bitlen[1] >> 8;
+	ctx->data[57] = ctx->bitlen[1] >> 16;
+	ctx->data[56] = ctx->bitlen[1] >> 24;
+	SHA256Transform(ctx, ctx->data);
+
+	for (i = 0; i < 4; ++i) {
+		hash[i] = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 4] = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 8] = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
+	}
+}
+
+//actual function
+void sha256(char* data, char* hashStr) {
+	int strLen = strlen(data);
+	SHA256_CTX ctx;
+	unsigned char hash[32];
+	strcpy(hashStr, "");
+
+	SHA256Init(&ctx);
+	SHA256Update(&ctx, data, strLen);
+	SHA256Final(&ctx, hash);
+
+	char s[3];
+	for (int i = 0; i < 32; i++) {
+		sprintf(s, "%02x", hash[i]);
+		strcat(hashStr, s);
+	}
+	//printf("Hash: %s \n", hashStr);
+}

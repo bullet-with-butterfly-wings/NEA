@@ -5,7 +5,10 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 from PyQt5.QtCore import * 
 from PyQt5.QtGui import * 
-import asyncio
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QHBoxLayout, QGridLayout
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
@@ -55,6 +58,9 @@ class Scene(QMainWindow):
         if protocols[1] == "Vernam":
             print("Ciphering")
             call(["./vernam", "12345678901234567890123456789012"])
+        else:
+            print("Ciphering")
+            call(["./feistel","1","12345678901234567890123456789012"])
         time.sleep(10)
         f = open("buffer.txt", "r")
         self.cipherText = f.read()
@@ -144,6 +150,37 @@ class Scene(QMainWindow):
         self.setCentralWidget(self.sc)
         self.sc.decision.setText(text)
         self.show()
+    
+    def dh(self, next): 
+        self.sc = DH()
+        self.setCentralWidget(self.sc)
+        if next == "Feistel":
+            self.sc.continue_button.clicked.connect(self.feistel)
+        else:
+            self.sc.continue_button.clicked.connect(self.vernam)
+        self.show()
+
+
+    def rsa(self, next): 
+        self.sc = RSA()
+        self.setCentralWidget(self.sc)
+        if next == "Feistel":
+            self.sc.continue_button.clicked.connect(self.feistel)
+        else:
+            self.sc.continue_button.clicked.connect(self.vernam)
+        self.show()
+
+    def feistel(self): 
+        self.sc = Feistel(self)
+        self.setCentralWidget(self.sc)
+        self.show()
+
+    def vernam(self): 
+        self.sc = Vernam(self)
+        self.setCentralWidget(self.sc)
+        self.show()
+
+
 
 class Intro(QWidget):
     def __init__(self) -> None:
@@ -154,6 +191,140 @@ class Intro(QWidget):
         a tool developed specifically for students to learn 
         about ciphers and their applications. 
         You have two possibilities now:
+        """)
+        wait_text = QLabel("or you can wait for someones request...")
+        self.continue_button = QPushButton("Connect",self)
+
+        layout.addWidget(intro_text)
+        layout.addWidget(self.continue_button)
+        layout.addWidget(wait_text)
+        
+        components = [self.continue_button,intro_text,wait_text]
+        
+        for c in components[1:]:
+            c.setAlignment(Qt.AlignCenter)
+            c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
+            c.setFont(QFont("Ariel", 20))
+            c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        #self.continue_button.setStyleSheet("")
+
+        layout.setContentsMargins(200, 100, 200, 100)
+        self.continue_button.setFont(QFont("Ariel", 20))
+        self.setLayout(layout)
+
+class Vernam(QWidget):
+    def __init__(self, win) -> None:
+        super().__init__()
+        layout = QVBoxLayout()
+        #layout.setAlignment(Qt.AlignCenter)
+        intro_text = QLabel("""Vernam text
+        """)
+        wait_text = QLabel("or you can wait for someones request...")
+        self.continue_button = QPushButton("Connect",self)
+
+        layout.addWidget(intro_text)
+        layout.addWidget(self.continue_button)
+        layout.addWidget(wait_text)
+        self.continue_button.clicked.connect(win.chatroom)
+
+        components = [self.continue_button,intro_text,wait_text]
+        
+        for c in components[1:]:
+            c.setAlignment(Qt.AlignCenter)
+            c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
+            c.setFont(QFont("Ariel", 20))
+            c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        #self.continue_button.setStyleSheet("")
+
+        layout.setContentsMargins(200, 100, 200, 100)
+        self.continue_button.setFont(QFont("Ariel", 20))
+        self.setLayout(layout)
+
+class Feistel(QWidget):
+    def __init__(self, win) -> None:
+        super().__init__()
+        layout = QVBoxLayout()
+        #layout.setAlignment(Qt.AlignCenter)
+        intro_text = QLabel("""Feistel text
+        """)
+        wait_text = QLabel("or you can wait for someones request...")
+        self.continue_button = QPushButton("Connect",self)
+
+        layout.addWidget(intro_text)
+        layout.addWidget(self.continue_button)
+        layout.addWidget(wait_text)
+        self.continue_button.clicked.connect(win.chatroom)
+
+        components = [self.continue_button,intro_text,wait_text]
+        
+        for c in components[1:]:
+            c.setAlignment(Qt.AlignCenter)
+            c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
+            c.setFont(QFont("Ariel", 20))
+            c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        #self.continue_button.setStyleSheet("")
+
+        layout.setContentsMargins(200, 100, 200, 100)
+        self.continue_button.setFont(QFont("Ariel", 20))
+        self.setLayout(layout)
+
+
+class RSA(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout()
+        #layout.setAlignment(Qt.AlignCenter)
+        text1_label = QLabel("The RSA protocol is a widely used asymmetric encryption algorithm. It was invented by Ron Rivest, Adi Shamir, and Leonard Adleman in 1977. The RSA algorithm uses a public key and a private key to encrypt and decrypt data.")
+        text1_label.setWordWrap(True) # wrap text if too long
+        
+        # create QLabel for picture
+        picture_label = QLabel(self)
+        picture = QPixmap("enc.jpg") # replace "rsa_diagram.png" with your image file name and path
+        picture_label.setPixmap(picture)
+        picture_label.setAlignment(Qt.AlignRight)
+        
+        text2_label = QLabel("Another paragraph")
+        text2_label.setWordWrap(True) # wrap text if too long
+        text2_label.setWordWrap(True)
+        # create QPushButton for continue button
+        self.continue_button = QPushButton("Continue",self)
+        hbox = QHBoxLayout()
+        hbox.addWidget(text1_label)
+        hbox.addWidget(picture_label)
+        
+        # create QVBoxLayout and add widgets to it
+        vbox = QVBoxLayout()
+        vbox.addWidget(text2_label)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.continue_button)
+        
+        # set layout of widget to the QVBoxLayout
+        self.setLayout(vbox)
+        components = [self.continue_button,text1_label, text2_label]
+        
+        for c in components[1:]:
+            c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
+            c.setFont(QFont("Ariel", 20))
+            c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        #self.continue_button.setStyleSheet("")
+
+        layout.setContentsMargins(200, 200, 200, 200)
+        self.setLayout(layout)
+
+class DH(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout()
+        #layout.setAlignment(Qt.AlignCenter)
+        intro_text = QLabel("""rsa text
         """)
         wait_text = QLabel("or you can wait for someones request...")
         self.continue_button = QPushButton("Connect",self)
@@ -290,7 +461,8 @@ class Chatroom(QWidget):
     def __init__(self):
         super().__init__()
         # Create the text edit widget for displaying messages
-        self.text_display = QTextEdit("sfddsf")
+        self.text_display = QTextEdit("Messages:")
+        self.text_display.setFont(QFont("Arial", 15))
         self.text_display.setReadOnly(True)
         #self.text_display.setFontSize(23)
         self.text_edit = QTextEdit("Type in your message")
@@ -341,7 +513,7 @@ if __name__ == "__main__":
     window = Scene()
     #window.intro()
 
-    window.intro()
+    window.rsa("Vernam")
     #window.send_request()
     window.show()    
     

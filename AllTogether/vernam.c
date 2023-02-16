@@ -23,13 +23,13 @@ int main(int argc, char* argv[]){
     rewind(fp);
     char buffer[255] = {'\0'};
     fread(buffer, file_size, 1, fp);
-    printf("%s \n", buffer);
+    //printf("%s \n", buffer);
     fclose(fp);
 
     char *key = argv[1];
     char ciphertext[255] = {"\0"};
     vernam(buffer, key, ciphertext, strlen(buffer));
-    printf("CipherText: %s \n",ciphertext);
+    //printf("CipherText: %s \n",ciphertext);
     FILE *cp = fopen(filename, "w");
     fwrite(ciphertext, strlen(ciphertext), 1, cp);
     fclose(cp);

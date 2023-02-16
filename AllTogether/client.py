@@ -14,7 +14,6 @@ class Message: #does not work, new format [type, receiver, source, text]
         self.receiver = receiver
         self.source = source
         self.text = text
-        
     def info(self):
         print((self.type,self.receiver,self.source,self.text))
 
@@ -22,7 +21,8 @@ class Client(soc.socket):
     def __init__(self, family=soc.AF_INET, type=soc.SOCK_STREAM, proto=0, fileno=None):
         super().__init__(family, type, proto, fileno)
         self.connected = False
-        self.IP = "192.168.0.200" #server details
+        self.symm_key = "12345678901234567890123456789012"
+        self.IP = "192.168.0.127" #server details
         self.PORT = 9090
         self.buddy = None
         self.state = "connecting"
