@@ -26,6 +26,7 @@ class Scene(QMainWindow):
         self.setGeometry(400, 200, 1000, 700)
         self.partner = -1
         self.decision = None
+        self.symm_key = 0
         self.setWindowTitle("Encryption Engine")
         self.intro()
 
@@ -57,11 +58,10 @@ class Scene(QMainWindow):
         print(protocols)
         if protocols[1] == "Vernam":
             print("Ciphering")
-            call(["./vernam", "12345678901234567890123456789012"])
+            call(["./vernam", self.symm_key])
         else:
             print("Ciphering")
-            call(["./feistel","1","12345678901234567890123456789012"])
-        time.sleep(10)
+            call(["./feistel","1",self.symm_key])
         f = open("buffer.txt", "r")
         self.cipherText = f.read()
         f.close()
@@ -219,60 +219,85 @@ class Vernam(QWidget):
         super().__init__()
         layout = QVBoxLayout()
         #layout.setAlignment(Qt.AlignCenter)
-        intro_text = QLabel("""Vernam text
-        """)
-        wait_text = QLabel("or you can wait for someones request...")
-        self.continue_button = QPushButton("Connect",self)
-
-        layout.addWidget(intro_text)
-        layout.addWidget(self.continue_button)
-        layout.addWidget(wait_text)
-        self.continue_button.clicked.connect(win.chatroom)
-
-        components = [self.continue_button,intro_text,wait_text]
+        text1_label = QLabel("Something something, vernam goood, am i right? something, something")
+        text1_label.setWordWrap(True) # wrap text if too long
+        
+        # create QLabel for picture
+        picture_label = QLabel(self)
+        picture = QPixmap("enc.jpg") # replace "rsa_diagram.png" with your image file name and path
+        picture_label.setPixmap(picture)
+        picture_label.setAlignment(Qt.AlignRight)
+        
+        text2_label = QLabel("Another paragraph")
+        text2_label.setWordWrap(True) # wrap text if too long
+        # create QPushButton for continue button
+        self.continue_button = QPushButton("Continue",self)
+        hbox = QHBoxLayout()
+        hbox.addWidget(text1_label)
+        hbox.addWidget(picture_label)
+        
+        # create QVBoxLayout and add widgets to it
+        vbox = QVBoxLayout()
+        vbox.addWidget(text2_label)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.continue_button)
+        
+        # set layout of widget to the QVBoxLayout
+        components = [self.continue_button,text1_label, text2_label]
         
         for c in components[1:]:
-            c.setAlignment(Qt.AlignCenter)
             c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
             c.setFont(QFont("Ariel", 20))
             c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.continue_button.clicked.connect(win.chatroom)
         #self.continue_button.setStyleSheet("")
-
-        layout.setContentsMargins(200, 100, 200, 100)
-        self.continue_button.setFont(QFont("Ariel", 20))
-        self.setLayout(layout)
-
+        self.setLayout(vbox)
+        
+        
 class Feistel(QWidget):
-    def __init__(self, win) -> None:
+    def __init__(self,win) -> None:
         super().__init__()
         layout = QVBoxLayout()
         #layout.setAlignment(Qt.AlignCenter)
-        intro_text = QLabel("""Feistel text
-        """)
-        wait_text = QLabel("or you can wait for someones request...")
-        self.continue_button = QPushButton("Connect",self)
-
-        layout.addWidget(intro_text)
-        layout.addWidget(self.continue_button)
-        layout.addWidget(wait_text)
-        self.continue_button.clicked.connect(win.chatroom)
-
-        components = [self.continue_button,intro_text,wait_text]
+        text1_label = QLabel("The Feistel") 
+        text1_label.setWordWrap(True) # wrap text if too long
         
+        # create QLabel for picture
+        picture_label = QLabel(self)
+        picture = QPixmap("enc.jpg") # replace "rsa_diagram.png" with your image file name and path
+        picture_label.setPixmap(picture)
+        picture_label.setAlignment(Qt.AlignRight)
+        
+        text2_label = QLabel("Another paragraph")
+        text2_label.setWordWrap(True) # wrap text if too long
+        text2_label.setWordWrap(True)
+        # create QPushButton for continue button
+        self.continue_button = QPushButton("Continue",self)
+        hbox = QHBoxLayout()
+        hbox.addWidget(text1_label)
+        hbox.addWidget(picture_label)
+        
+        # create QVBoxLayout and add widgets to it
+        vbox = QVBoxLayout()
+        vbox.addWidget(text2_label)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.continue_button)
+        
+        # set layout of widget to the QVBoxLayout
+        components = [self.continue_button,text1_label, text2_label]
+        
+        self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        #self.continue_button.setStyleSheet("")
+        self.continue_button.clicked.connect(win.chatroom)
         for c in components[1:]:
-            c.setAlignment(Qt.AlignCenter)
             c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
             c.setFont(QFont("Ariel", 20))
             c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setLayout(vbox)
 
-        self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        #self.continue_button.setStyleSheet("")
-
-        layout.setContentsMargins(200, 100, 200, 100)
-        self.continue_button.setFont(QFont("Ariel", 20))
-        self.setLayout(layout)
+        
 
 
 class RSA(QWidget):
@@ -316,27 +341,42 @@ class RSA(QWidget):
         self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         #self.continue_button.setStyleSheet("")
 
-        layout.setContentsMargins(200, 200, 200, 200)
-        self.setLayout(layout)
-
+        #layout.setContentsMargins(200, 200, 200, 200)
+        
 class DH(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout()
         #layout.setAlignment(Qt.AlignCenter)
-        intro_text = QLabel("""rsa text
-        """)
-        wait_text = QLabel("or you can wait for someones request...")
-        self.continue_button = QPushButton("Connect",self)
-
-        layout.addWidget(intro_text)
-        layout.addWidget(self.continue_button)
-        layout.addWidget(wait_text)
+        text1_label = QLabel("Something something, diffie goood, am i right? something, something")
+        text1_label.setWordWrap(True) # wrap text if too long
         
-        components = [self.continue_button,intro_text,wait_text]
+        # create QLabel for picture
+        picture_label = QLabel(self)
+        picture = QPixmap("enc.jpg") # replace "rsa_diagram.png" with your image file name and path
+        picture_label.setPixmap(picture)
+        picture_label.setAlignment(Qt.AlignRight)
+        
+        text2_label = QLabel("Another paragraph")
+        text2_label.setWordWrap(True) # wrap text if too long
+        text2_label.setWordWrap(True)
+        # create QPushButton for continue button
+        self.continue_button = QPushButton("Continue",self)
+        hbox = QHBoxLayout()
+        hbox.addWidget(text1_label)
+        hbox.addWidget(picture_label)
+        
+        # create QVBoxLayout and add widgets to it
+        vbox = QVBoxLayout()
+        vbox.addWidget(text2_label)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.continue_button)
+        
+        # set layout of widget to the QVBoxLayout
+        self.setLayout(vbox)
+        components = [self.continue_button,text1_label, text2_label]
         
         for c in components[1:]:
-            c.setAlignment(Qt.AlignCenter)
             c.setStyleSheet("border: 1px solid black;padding-left: 100px; padding-right: 100px")
             c.setFont(QFont("Ariel", 20))
             c.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -344,10 +384,8 @@ class DH(QWidget):
         self.continue_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         #self.continue_button.setStyleSheet("")
 
-        layout.setContentsMargins(200, 100, 200, 100)
-        self.continue_button.setFont(QFont("Ariel", 20))
-        self.setLayout(layout)
-
+        #layout.setContentsMargins(200, 200, 200, 200)
+        
 class RequestMaker(QWidget):
     def __init__(self, contacts) -> None:
         super().__init__()

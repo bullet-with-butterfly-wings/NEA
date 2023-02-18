@@ -4,7 +4,7 @@
 #include<unistd.h>
 
 # define BLOCK 64 
-# define KEY_LENGTH 32
+# define KEY_LENGTH 10
 # define N 2
 
 //ADD keys

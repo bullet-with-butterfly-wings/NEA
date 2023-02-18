@@ -4,7 +4,7 @@ from client import *
 class Server(soc.socket):
     def __init__(self, family=soc.AF_INET, type=soc.SOCK_STREAM, proto=0, fileno=None):
         super().__init__(family, type, proto, fileno)
-        self.IP = "192.168.0.127" #server details
+        self.IP = "10.4.3.61" #server details
         self.PORT = 9090
         self.bind((self.IP,self.PORT))
         self.listen()      

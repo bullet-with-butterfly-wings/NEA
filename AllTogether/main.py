@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSizePol
 from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
 from threading import Timer
 from client import * 
+import random
 from actual_gui import protocols
 import signal
 import time
@@ -47,6 +48,18 @@ def gui_handler():
             if loco.protocols[0] == "RSA":
                 window.rsa(loco.protocols[1])#protocols
             else:
+                #DH protocol
+                n = 2147483647
+                g = 7
+                a = random.randint(1,n-1)
+                A = pow(g,a,n)
+                print(f"A:{A}, a:{a}")
+                loco.send_msg("protocols", loco.buddy, str(A))
+                time.sleep(0.2)
+                B = int(loco.text)
+                loco.symm_key = str(pow(B,a,n))
+                window.symm_key = loco.symm_key
+                print(loco.symm_key)
                 window.dh(loco.protocols[1])
         else:
             loco.response("reject")
@@ -54,7 +67,7 @@ def gui_handler():
             window.buddy = None
             window.intro()
             loco.state = "connecting"
- 
+
 def cli_handler():
     if loco.state == "received_request":
         window.response(loco.buddy, loco.protocols)
@@ -68,13 +81,24 @@ def cli_handler():
         else:
             window.solution(loco.protocols)
         if loco.protocols[0] == "RSA":
-            window.rsa(loco.protocols[1])#protocols
+            window.rsa(loco.protocols[1])
         else:
+            #DH protocol
+            n = 2147483647
+            g = 7
+            a = random.randint(1,n-1)
+            A = pow(g,a,n)
+            print(f"A:{A}, a:{a}")
+            loco.send_msg("protocols", loco.buddy, str(A))
+            time.sleep(0.2)
+            B = int(loco.text)
+            loco.symm_key = str(pow(B,a,n))
+            print(loco.symm_key)
+            #wait for message
+            window.symm_key = loco.symm_key
             window.dh(loco.protocols[1])
-    
-    
-        
-        
+        #initialize protocol    
+                
     if loco.state == "rejected":
         window.waiting_for_response("Rejected")
         loco.state = "connecting"

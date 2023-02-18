@@ -14,6 +14,7 @@ class Message: #does not work, new format [type, receiver, source, text]
         self.receiver = receiver
         self.source = source
         self.text = text
+    
     def info(self):
         print((self.type,self.receiver,self.source,self.text))
 
@@ -22,7 +23,7 @@ class Client(soc.socket):
         super().__init__(family, type, proto, fileno)
         self.connected = False
         self.symm_key = "12345678901234567890123456789012"
-        self.IP = "192.168.0.127" #server details
+        self.IP = "10.4.3.61" #server details
         self.PORT = 9090
         self.buddy = None
         self.state = "connecting"
@@ -87,7 +88,9 @@ class Client(soc.socket):
                     print(f"From {action.source}:",action.text)
                     self.state = "received"
                     self.text = action.text
-    
+                if action.type == "protocols":
+                    self.text = action.text
+
     def response(self, decision):
         self.send_msg("response", self.buddy, decision)
 

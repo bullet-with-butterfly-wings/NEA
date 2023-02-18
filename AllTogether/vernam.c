@@ -3,9 +3,11 @@
 #include <string.h>
 #include<unistd.h>
 
+#define KEY_LENGTH 10
+
 void vernam(char *plaintext, char *key, char *ciphertext, int len) {
   for (int i = 0; i < len; i++) {
-    ciphertext[i] = plaintext[i] ^ key[i % 32];
+    ciphertext[i] = plaintext[i] ^ key[i % KEY_LENGTH];
   }
 }
 
