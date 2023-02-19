@@ -5,7 +5,9 @@
 #include<math.h>
 #include<unistd.h>
 
-#include "../library.h"
+#include "../lib/library.h"
+
+ //gcc rsa.c ../lib/library.c -lm -o rsa
 
 int main(){
   char *filename = "keys.out";
@@ -19,7 +21,7 @@ int main(){
   }
 
   huge e, d, n, m;
-  fscanf(fp,"%llu \n %llu \n %llu", &n, &e, &d);
+  fscanf(fp,"%llu \n %llu \n %llu", &n, &d, &e);
   printf("Enter your message:");
   scanf("%llu", &m);
   huge scrambled = pow_mod(m, d, n);
@@ -27,7 +29,6 @@ int main(){
   huge decrypted = pow_mod(scrambled, e, n);
   printf("Decrypted message: %llu \n", decrypted);
 
-  sleep(7000); //millisecond
   return 0;
-  }
+}
 

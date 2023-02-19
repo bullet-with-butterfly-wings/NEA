@@ -46,6 +46,14 @@ def gui_handler():
             else:
                 window.solution(loco.protocols)
             if loco.protocols[0] == "RSA":
+                call(["./generator"])    
+                f = open("keys.out", "r")
+                keys = f.readlines()
+                loco.send_msg("protocols", loco.buddy, keys[0]+" "+keys[1])
+                time.sleep(0.3)                
+                loco.symm_key = str(pow(int(loco.text), int(keys[2]),int(keys[0]))) 
+                window.symm_key = loco.symm_key
+                print(loco.symm_key)
                 window.rsa(loco.protocols[1])#protocols
             else:
                 #DH protocol
@@ -81,6 +89,12 @@ def cli_handler():
         else:
             window.solution(loco.protocols)
         if loco.protocols[0] == "RSA":
+            time.sleep(0.2)
+            keys = loco.text.split(" ")
+            loco.symm_key = str(random.randint(0,int(keys[0])-1))
+            window.symm_key = loco.symm_key
+            print(loco.symm_key)
+            loco.send_msg("protocols", loco.buddy, str(pow(int(loco.symm_key), int(keys[1]), int(keys[0]))))
             window.rsa(loco.protocols[1])
         else:
             #DH protocol
