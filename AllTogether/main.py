@@ -1,56 +1,45 @@
 import sys
 import time
-from PyQt5.QtWidgets import * 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
-from PyQt5.QtCore import * 
-from PyQt5.QtGui import * 
-import asyncio
-from PyQt5.QtWidgets import *
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QHBoxLayout, QGridLayout
-from PyQt5.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
-from threading import Timer
-from client import * 
 import random
-from actual_gui import protocols
-import signal
-import time
-import os
-import sys
 from subprocess import call
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
+from PyQt5.QtGui import * 
+from PyQt5.QtWidgets import QApplication
 
+from client import * 
+from actual_gui import *
     
 def gui_handler():
-    #if window.state == "intro":
-    #    window.intro()
     if window.state == "making_request": 
         arg = []
         for c in loco.contacts:
-            arg.append(c[0]+str(c[1])) 
-        window.making_request(arg) 
+            arg.append(c[0]+" "+str(c[1]))  
+        window.making_request(arg)
     elif window.state == "waiting_for_response":
-        loco.initialiser(protocols,window.partner)    
+        loco.initialiser(window.protocols,window.partner)    
     elif window.state == "sending":
         loco.send_msg("message",loco.buddy, window.cipherText)
         window.state = "chatroom"
         loco.state = "in_call"
-    
     elif window.state == "answered_request":
+        print(window.decision)
         if window.decision:
-            loco.response("accept")
             loco.connected = True
-            loco.send_msg("buffer",loco.getsockname(), "buffer")
+            loco.response("accept")
+            loco.send_msg("buffer", loco.getsockname())
             loco.state = "in_call"
             if loco.protocols == ["",""]:
-                loco.protocols[0] = window.spojka()[0]
-                loco.protocols[1] = window.spojka()[1]        
+                loco.protocols = window.protocols #maybe?
             else:
-                window.solution(loco.protocols)
+                window.protocols = loco.protocols
+                
             if loco.protocols[0] == "RSA":
                 call(["./generator"])    
                 f = open("keys.out", "r")
                 keys = f.readlines()
                 loco.send_msg("protocols", loco.buddy, keys[0]+" "+keys[1])
-                time.sleep(0.3)                
+                while not loco.text:
+                    time.sleep(0.1)
                 loco.symm_key = str(pow(int(loco.text), int(keys[2]),int(keys[0]))) 
                 window.symm_key = loco.symm_key
                 print(loco.symm_key)
@@ -63,33 +52,35 @@ def gui_handler():
                 A = pow(g,a,n)
                 print(f"A:{A}, a:{a}")
                 loco.send_msg("protocols", loco.buddy, str(A))
-                time.sleep(0.2)
+                while not loco.text:
+                    time.sleep(0.1)
                 B = int(loco.text)
                 loco.symm_key = str(pow(B,a,n))
                 window.symm_key = loco.symm_key
                 print(loco.symm_key)
                 window.dh(loco.protocols[1])
         else:
+            window.protocols = ["",""]
             loco.response("reject")
-            window.protocols = ("","")
             window.buddy = None
             window.intro()
             loco.state = "connecting"
 
 def cli_handler():
+    print(loco.state)
     if loco.state == "received_request":
         window.response(loco.buddy, loco.protocols)
 
     if loco.state == "accepted":
-        window.waiting_for_response("Accepted")
         loco.state = "in_call"
         if loco.protocols == ["",""]:
-            loco.protocols[0] = window.spojka()[0]
-            loco.protocols[1] = window.spojka()[1]        
+            loco.protocols = window.protocols  
         else:
-            window.solution(loco.protocols)
+            window.protocols = loco.protocols
+        
         if loco.protocols[0] == "RSA":
-            time.sleep(0.2)
+            while not loco.text:
+                time.sleep(0.1)
             keys = loco.text.split(" ")
             loco.symm_key = str(random.randint(0,int(keys[0])-1))
             window.symm_key = loco.symm_key
@@ -104,7 +95,8 @@ def cli_handler():
             A = pow(g,a,n)
             print(f"A:{A}, a:{a}")
             loco.send_msg("protocols", loco.buddy, str(A))
-            time.sleep(0.2)
+            while not loco.text:
+                time.sleep(0.1)
             B = int(loco.text)
             loco.symm_key = str(pow(B,a,n))
             print(loco.symm_key)
@@ -114,9 +106,9 @@ def cli_handler():
         #initialize protocol    
                 
     if loco.state == "rejected":
-        window.waiting_for_response("Rejected")
         loco.state = "connecting"
         window.intro()
+  
     if loco.state == "received":
         cipherText = loco.text
         f = open("buffer.txt", "w")
@@ -130,23 +122,24 @@ def cli_handler():
         else:
             call(["./feistel", "0", loco.symm_key])
         #execute decrypting
-        #time.sleep(2)
         f = open("buffer.txt", "r")
         plainText = f.read()
         f.close()
-        window.sc.text_display.append(f"Buddy CipherText:{cipherText} \n     PlainText: {plainText}")
+        try: 
+            window.sc.text_display.append(f"Buddy CipherText:{cipherText} \n      PlainText: {plainText}")
+        except:
+            print("Partner hasnot finished reading")
         loco.state = "in_call"
 
 class Worker(QObject):
     finished = pyqtSignal()
     gui_change = pyqtSignal()
     cli_change = pyqtSignal()
+    
     def check(self):
         pre_g = ""
         pre_c = ""
         while True:
-            #print("Window:",window.state)
-            #print("Client:",loco.state)
             if window.state != pre_g:
                 self.gui_change.emit()
                 pre_g = window.state
@@ -157,9 +150,7 @@ class Worker(QObject):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    global loco
     loco = Client()
-    global window
     window = Scene()
 
     thread = QThread()

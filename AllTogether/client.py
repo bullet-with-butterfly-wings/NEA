@@ -23,7 +23,7 @@ class Client(soc.socket):
         super().__init__(family, type, proto, fileno)
         self.connected = False
         self.symm_key = "12345678901234567890123456789012"
-        self.IP = "192.168.0.127" #server details
+        self.IP = "172.20.12.200" #server details
         self.PORT = 9090
         self.buddy = None
         self.state = "connecting"
