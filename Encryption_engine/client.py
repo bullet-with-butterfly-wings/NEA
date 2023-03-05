@@ -18,7 +18,7 @@ class Client(soc.socket):
     def __init__(self, family=soc.AF_INET, type=soc.SOCK_STREAM, proto=0, fileno=None):
         super().__init__(family, type, proto, fileno)
         self.connected = False
-        self.symm_key = ""
+        self.symm_key = "12345678901234567890123456789012"
         self.IP = "172.20.12.200" #server details
         self.PORT = 9090
         self.buddy = None
