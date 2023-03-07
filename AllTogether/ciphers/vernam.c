@@ -12,8 +12,7 @@ void vernam(char *plaintext, char *key, char *ciphertext, int len) {
 }
 
 int main(int argc, char* argv[]){
-    FILE *file;
-    char *filename = "../buffer.txt";
+    char *filename = "buffer.txt";
     FILE *fp = fopen(filename, "r");
     if (fp == NULL) {
         perror("Error opening file");
@@ -27,7 +26,7 @@ int main(int argc, char* argv[]){
     fread(buffer, file_size, 1, fp);
     //printf("%s \n", buffer);
     fclose(fp);
-
+    printf("%s",buffer);
     char *key = argv[1];
     char ciphertext[255] = {"\0"};
     vernam(buffer, key, ciphertext, strlen(buffer));

@@ -16,7 +16,7 @@ int main(){
   huge e = 0; //private key
   huge n = 0; //HUGE n
 
-  char *filename = "../keys.out";
+  char *filename = "keys.out";
    
   // open the file for writing
   FILE *fp = fopen(filename, "w");

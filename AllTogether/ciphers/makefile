@@ -26,4 +26,5 @@ vernam: vernam.c
 
 clean: 
 	rm lib/*.o
+	rm lib/library.a
 	rm feistel generator rsa vernam dh

@@ -1,3 +1,4 @@
+#!/home/jonas/anaconda3/bin/python3
 import sys
 import time
 import random
@@ -6,15 +7,18 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtGui import * 
 from PyQt5.QtWidgets import QApplication
 
+
 from client import * 
 from gui import *
-    
+from server import *
+
 def gui_handler():
     if window.state == "making_request": 
         arg = []
         for c in client.contacts:
             arg.append(c[0]+" "+str(c[1]))  
         window.making_request(arg)
+    
     elif window.state == "waiting_for_response":
         client.initialiser(window.protocols,window.partner)    
     elif window.state == "sending":
@@ -84,7 +88,7 @@ def cli_handler():
             keys = client.text.split(" ")
             client.symm_key = str(random.randint(0,int(keys[0])-1))
             window.symm_key = client.symm_key
-            print(client.symm_key)
+            print("Keys:", client.symm_key)
             client.send_msg("protocols", client.buddy, str(pow(int(client.symm_key), int(keys[1]), int(keys[0]))))
             window.rsa(client.protocols[1])
         else:
@@ -118,9 +122,9 @@ def cli_handler():
         print(client.protocols[1])
         if client.protocols[1] == "Vernam":
             print("Decrypting")
-            call(["./vernam", client.symm_key])
+            call(["./ciphers/vernam", client.symm_key])
         else:
-            call(["./feistel", "0", client.symm_key])
+            call(["./ciphers/feistel", "0", client.symm_key])
         #execute decrypting
         f = open("buffer.txt", "r")
         plainText = f.read()
@@ -143,15 +147,24 @@ class Worker(QObject):
             if window.state != pre_g:
                 self.gui_change.emit()
                 pre_g = window.state
+                
             if client.state != pre_c:
-                self.cli_change.emit()
-                pre_c = client.state
-        
-
+                    self.cli_change.emit()
+                    pre_c = client.state
+            
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    client = Client()
     window = Scene()
+    try:
+        client = Client()
+    except:
+        s = Server()
+        ser = thr.Thread(target=s.listening)
+        ser.start()
+        f = open("IP.txt","w")
+        f.write(s.IP)
+        f.close()
+        client = Client()
 
     thread = QThread()
     # Step 3: Create a worker object

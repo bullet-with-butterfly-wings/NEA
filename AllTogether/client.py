@@ -15,19 +15,20 @@ class Message: #does not work, new format [type, receiver, source, text]
         print((self.type,self.receiver,self.source,self.text))
 
 class Client(soc.socket):
-    def __init__(self, family=soc.AF_INET, type=soc.SOCK_STREAM, proto=0, fileno=None):
+    def __init__(self,family=soc.AF_INET, type=soc.SOCK_STREAM, proto=0, fileno=None):
         super().__init__(family, type, proto, fileno)
         self.connected = False
-        self.symm_key = ""
-        self.IP = "172.20.12.200" #server details
         self.PORT = 9090
+        f = open("IP.txt", "r")
+        self.IP = f.read()
+        f.close()
         self.buddy = None
         self.state = "connecting"
         self.text = None
         self.connect((self.IP,self.PORT))
         print(self.recv(1024).decode("utf-8"))#greeting from the server
         self.contacts = pickle.loads(self.recv(4096))
-        print("Contacts:",self.contacts)
+        print(self.contacts)
         self.up = thr.Thread(target= self.updater)
         self.up.start()
         self.protocols = ["",""]

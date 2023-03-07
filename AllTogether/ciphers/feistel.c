@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
   
 	char message[BLOCK] = {"\0"};
 	FILE *file;
-    char *filename = "../buffer.txt";
+    char *filename = "buffer.txt";
     FILE *fp = fopen(filename, "r");
     if (fp == NULL) {
         perror("Error opening file");

@@ -8,7 +8,7 @@
 #include "lib/library.h"
 
 int main(){
-  char *filename = "../keys.out";
+  char *filename = "keys.out";
    
   // open the file for writing
   FILE *fp = fopen(filename, "r");
